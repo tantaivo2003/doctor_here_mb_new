@@ -10,34 +10,37 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../navigation/navigation";
-// import DateTimePickerModal from "react-native-modal-datetime-picker";
-// import DateTimePicker from "react-native-modal-datetime-picker";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { Dropdown } from "react-native-element-dropdown";
 import { useState } from "react";
 
 export default function ProfileCreate() {
-  //   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  //   const [selectedDate, setSelectedDate] = useState(""); // Lưu ngày đã chọn
-  //   const [date, setDate] = useState(new Date());
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedGender, setSelectedGender] = useState(null);
+  const genderOptions = [
+    { label: "Nam", value: "male" },
+    { label: "Nữ", value: "female" },
+  ];
 
-  //   const showDatePicker = () => {
-  //     console.log("showDatePicker");
-  //     setDatePickerVisibility(true);
-  //   };
+  const showDatePicker = () => {
+    console.log("showDatePicker");
+    setDatePickerVisibility(true);
+  };
 
-  //   const hideDatePicker = () => {
-  //     console.log("hideDatePicker");
-  //     setDatePickerVisibility(false);
-  //   };
+  const hideDatePicker = () => {
+    console.log("hideDatePicker");
+    setDatePickerVisibility(false);
+  };
 
-  //   const handleConfirm = (selectedDate: Date) => {
-  //     setDate(selectedDate); // Cập nhật giá trị ngày mới
-  //     setSelectedDate(selectedDate.toLocaleDateString("vi-VN")); // Format ngày tháng
-  //     hideDatePicker();
-  //   };
+  const handleConfirm = (selectedDate: Date) => {
+    setSelectedDate(selectedDate); // Format ngày tháng
+    hideDatePicker();
+  };
 
-  //   const handleCancel = () => {
-  //     hideDatePicker();
-  //   };
+  const handleCancel = () => {
+    hideDatePicker();
+  };
 
   return (
     <View style={styles.scrWrapper}>
@@ -67,8 +70,31 @@ export default function ProfileCreate() {
           autoCapitalize="none"
           placeholder="Email"
         />
-        <TextInput style={styles.input} placeholder="Giới tính" />
-        <TextInput style={styles.input} placeholder="Ngày sinh" />
+        <Dropdown
+          placeholder="Giới tính"
+          data={genderOptions}
+          value={selectedGender}
+          onChange={(item) => setSelectedGender(item.value)}
+          labelField={"label"}
+          valueField={"value"}
+          style={styles.input}
+        />
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+          date={selectedDate}
+          isDarkModeEnabled={false}
+          textColor="#000"
+        />
+        <TouchableOpacity onPress={showDatePicker}>
+          <Text style={styles.input}>
+            {selectedDate
+              ? selectedDate.toLocaleDateString("vi-VN")
+              : "Ngày sinh"}
+          </Text>
+        </TouchableOpacity>
       </View>
       <TouchableOpacity
         style={styles.btn}
