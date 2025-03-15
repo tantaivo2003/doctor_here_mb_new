@@ -9,7 +9,7 @@ export interface Doctor {
 }
 
 // Danh sách bác sĩ (một mảng dữ liệu mẫu)
-const doctors: Doctor[] = [
+export const doctorlist: Doctor[] = [
   {
     name: "Jessica",
     specialty: "Chuyên khoa nội",
@@ -36,4 +36,41 @@ const doctors: Doctor[] = [
   },
 ];
 
-export default doctors;
+export interface Appointment {
+  id: string;
+  doctor: string;
+  specialty: string;
+  hospital: string;
+  date: string;
+  time: string;
+  image: any;
+}
+export const appointments = [
+  {
+    id: "1",
+    doctor: "Jessica",
+    specialty: "Ngoại khoa",
+    hospital: "BV Hùng Vương",
+    date: "24/10/2024",
+    time: "10:00 AM",
+    image: require("../../assets/doctor_picture/sarah.png"),
+  },
+  {
+    id: "2",
+    doctor: "Sarah",
+    specialty: "Ngoại khoa",
+    hospital: "BV Hùng Vương",
+    date: "24/10/2024",
+    time: "10:00 AM",
+    image: require("../../assets/doctor_picture/sarah.png"),
+  },
+  {
+    id: "3",
+    doctor: "Michael",
+    specialty: "Ngoại khoa",
+    hospital: "BV Hùng Vương",
+    date: "24/10/2024",
+    time: "10:00 AM",
+    image: require("../../assets/doctor_picture/sarah.png"),
+  },
+];

@@ -28,7 +28,7 @@ const timeSlots = [
   "05:30 PM",
 ];
 
-export default function DoctorAppointment({ navigation, route }: any) {
+export default function OfflineAppointment({ navigation, route }: any) {
   const { doctor } = route.params;
   const defaultStyles = getDefaultStyles();
   let today = new Date();

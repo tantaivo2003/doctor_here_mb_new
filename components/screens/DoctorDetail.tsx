@@ -98,15 +98,24 @@ export default function DoctorDetail({ navigation, route }: any) {
         </TouchableOpacity>
 
         <View className="flex-row justify-between">
-          <TouchableOpacity className="flex-1 bg-teal-500 py-3 rounded-full items-center mr-2">
-            <Text className="text-white font-semibold">Đặt lịch tư vấn</Text>
+          <TouchableOpacity
+            className="flex-1 bg-teal-500 py-3 rounded-full items-center mr-2"
+            onPress={() => navigation.navigate("OnlineAppointment", { doctor })}
+          >
+            <Text className="text-white font-semibold">
+              Đặt lịch tư vấn trực tuyến
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             className="flex-1 bg-gray-900 py-3 rounded-full items-center"
-            onPress={() => navigation.navigate("DoctorAppointment", { doctor })}
+            onPress={() =>
+              navigation.navigate("OfflineAppointment", { doctor })
+            }
           >
-            <Text className="text-white font-semibold">Đặt lịch khám</Text>
+            <Text className="text-white font-semibold">
+              Đặt lịch khám trực tiếp
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

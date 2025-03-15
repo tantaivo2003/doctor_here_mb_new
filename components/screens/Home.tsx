@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import ShortcutButton from "../ui/ShortCutButton";
 import SearchIcon from "../icons/SearchIcon";
-import doctors, { Doctor } from "./types";
+import { doctorlist, Doctor } from "./types";
 
 const systemShortcuts = [
   { icon: "pills", title: "Lịch uống thuốc", color: "#EFA8A8" },
@@ -91,15 +91,15 @@ export default function Home({ navigation }: any) {
 
       <View className="flex flex-row justify-between mt-10 mb-5">
         <Text className="text-xl font-bold text-gray-800">
-          Bác sĩ bạn đánh dấu
+          Bác sĩ bạn yên thích
         </Text>
-        <TouchableOpacity onPress={() => navigation.navigate("Details")}>
+        <TouchableOpacity onPress={() => navigation.navigate("FavoriteDoctor")}>
           <Text className="text-blue-500">Xem tất cả</Text>
         </TouchableOpacity>
       </View>
 
       <View className="flex flex-row gap-3 mb-10 justify-between">
-        {doctors.map((doctor, index) => (
+        {doctorlist.map((doctor, index) => (
           <TouchableOpacity
             key={index}
             className="bg-white flex flex-col items-center p-4 justify-center rounded-2xl shadow-lg shadow-gray-400"

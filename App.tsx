@@ -5,11 +5,13 @@ import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaView, Text, Button, StatusBar } from "react-native";
 
 import Home from "./components/screens/Home";
-import DetailsScreen from "./components/screens/DetailsScreen";
 import MessageScreen from "./components/screens/MessageScreen";
 import AppointmentScreen from "./components/screens/appointment/AppointmentScreen";
+import AppointmentDetails from "./components/screens/appointment/AppointmentDetails";
 import FindDoctor from "./components/screens/FindDoctor";
-import DoctorAppointment from "./components/screens/DoctorAppointment";
+import FavoriteDoctor from "./components/screens/FavoriteDoctor";
+import OfflineAppointment from "./components/screens/OfflineAppointment";
+import OnlineAppointment from "./components/screens/OnlineAppointment";
 import ConfirmAppointment from "./components/screens/ConfirmAppointment";
 import {
   HomeIcon,
@@ -43,6 +45,11 @@ const HomeStack = () => (
       }}
     />
     <Stack.Screen
+      name="FavoriteDoctor"
+      component={FavoriteDoctor}
+      options={{ title: "Bác sĩ yêu thích", headerTitleAlign: "center" }}
+    />
+    <Stack.Screen
       name="DoctorDetail"
       component={DoctorDetail}
       options={({ route }) => ({
@@ -51,9 +58,14 @@ const HomeStack = () => (
       })}
     />
     <Stack.Screen
-      name="DoctorAppointment"
-      component={DoctorAppointment}
+      name="OfflineAppointment"
+      component={OfflineAppointment}
       options={{ title: "Đặt lịch khám", headerTitleAlign: "center" }}
+    />
+    <Stack.Screen
+      name="OnlineAppointment"
+      component={OnlineAppointment}
+      options={{ title: "Đặt lịch tư vấn", headerTitleAlign: "center" }}
     />
     <Stack.Screen
       name="ConfirmAppointment"
@@ -71,22 +83,9 @@ const AppointmentStack = () => (
       options={{ title: "Lịch hẹn của tôi", headerTitleAlign: "center" }}
     />
     <Stack.Screen
-      name="DoctorDetail"
-      component={DoctorDetail}
-      options={({ route }) => ({
-        title: "Thông tin chi tiết",
-        headerTitleAlign: "center",
-      })}
-    />
-    <Stack.Screen
-      name="DoctorAppointment"
-      component={DoctorAppointment}
-      options={{ title: "Đặt lịch khám", headerTitleAlign: "center" }}
-    />
-    <Stack.Screen
-      name="ConfirmAppointment"
-      component={ConfirmAppointment}
-      options={{ title: "Xác nhận thông tin", headerTitleAlign: "center" }}
+      name="AppointmentDetails"
+      component={AppointmentDetails}
+      options={{ title: "Chi tiết lịch hẹn", headerTitleAlign: "center" }}
     />
   </Stack.Navigator>
 );

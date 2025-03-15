@@ -1,5 +1,5 @@
 import { View, Text, Image, TouchableOpacity } from "react-native";
-import { FC } from "react";
+import { FC, useState } from "react";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 
 interface DoctorCardProps {
@@ -21,6 +21,12 @@ const DoctorCard: FC<DoctorCardProps> = ({
   image,
   onPress,
 }) => {
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const toggleFavorite = () => {
+    setIsFavorite(!isFavorite);
+  };
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -34,8 +40,12 @@ const DoctorCard: FC<DoctorCardProps> = ({
       <View className="flex-1 ml-4">
         <View className="flex-row justify-between">
           <Text className="text-lg font-bold text-gray-900">{name}</Text>
-          <TouchableOpacity>
-            <FontAwesome name="heart-o" size={20} color="gray" />
+          <TouchableOpacity onPress={toggleFavorite}>
+            <FontAwesome
+              name={isFavorite ? "heart" : "heart-o"}
+              size={20}
+              color={isFavorite ? "#111827" : "gray"} // Màu đen đậm nếu đã yêu thích
+            />
           </TouchableOpacity>
         </View>
         <View className="h-[1px] bg-gray-300 my-2" />
