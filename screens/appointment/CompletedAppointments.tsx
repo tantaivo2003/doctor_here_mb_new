@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import StarRating from "react-native-star-rating-widget";
 import Modal from "react-native-modal";
-import { doctorlist, appointments, Appointment } from "../types";
+import { doctorlist, appointments, Appointment } from "../../components/types";
 
 export default function CompletedAppointments({ navigation }: any) {
   const [modalVisible, setModalVisible] = useState(false);

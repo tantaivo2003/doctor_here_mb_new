@@ -1,6 +1,7 @@
 import { View, Text, Image, TouchableOpacity } from "react-native";
 import { FC, useState } from "react";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import Modal from "react-native-modal";
 
 interface DoctorCardProps {
   name: string;
@@ -9,6 +10,7 @@ interface DoctorCardProps {
   rating: number;
   reviews: number;
   image: any;
+  isFavorite?: boolean;
   onPress?: () => void;
 }
 
@@ -19,12 +21,16 @@ const DoctorCard: FC<DoctorCardProps> = ({
   rating,
   reviews,
   image,
+  isFavorite = false,
   onPress,
 }) => {
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [favorite, setFavorite] = useState(isFavorite);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState(name);
 
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
+  const confirmCancel = () => {
+    setFavorite(false);
+    setModalVisible(false);
   };
 
   return (
@@ -40,11 +46,11 @@ const DoctorCard: FC<DoctorCardProps> = ({
       <View className="flex-1 ml-4">
         <View className="flex-row justify-between">
           <Text className="text-lg font-bold text-gray-900">{name}</Text>
-          <TouchableOpacity onPress={toggleFavorite}>
+          <TouchableOpacity onPress={() => setModalVisible(true)}>
             <FontAwesome
-              name={isFavorite ? "heart" : "heart-o"}
+              name={favorite ? "heart" : "heart-o"}
               size={20}
-              color={isFavorite ? "#111827" : "gray"} // Màu đen đậm nếu đã yêu thích
+              color={favorite ? "red" : "gray"}
             />
           </TouchableOpacity>
         </View>
@@ -67,6 +73,37 @@ const DoctorCard: FC<DoctorCardProps> = ({
           </Text>
         </View>
       </View>
+      {/* Modal Xác Nhận Hủy */}
+      <Modal
+        isVisible={modalVisible}
+        animationIn="zoomIn"
+        animationOut="zoomOut"
+      >
+        <View className="justify-center items-center">
+          <View className="bg-white rounded-2xl p-6 items-center">
+            <Text className="text-lg font-bold text-center">
+              Xóa khỏi bác sĩ yêu thích?
+            </Text>
+            <Text className="text-center text-gray-500 my-5">
+              Bạn có chắc muốn xóa {name} khỏi danh sách bác sĩ yêu thích không?
+            </Text>
+            <View className="flex-row justify-around mt-4 gap-5">
+              <TouchableOpacity
+                className="py-3 px-6 bg-gray-100 w-2/5 items-center rounded-full"
+                onPress={() => setModalVisible(false)}
+              >
+                <Text>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="py-3 px-6 bg-gray-900 w-2/5 items-center rounded-full"
+                onPress={confirmCancel}
+              >
+                <Text className="text-white">Xác nhận</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </TouchableOpacity>
   );
 };

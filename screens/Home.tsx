@@ -9,9 +9,9 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import ShortcutButton from "../ui/ShortCutButton";
-import SearchIcon from "../icons/SearchIcon";
-import { doctorlist, Doctor } from "./types";
+import ShortcutButton from "../components/ui/ShortCutButton";
+import SearchIcon from "../components/icons/SearchIcon";
+import { doctorlist, Doctor } from "../components/types";
 
 const systemShortcuts = [
   { icon: "pills", title: "Lịch uống thuốc", color: "#EFA8A8" },
@@ -105,7 +105,7 @@ export default function Home({ navigation }: any) {
             className="bg-white flex flex-col items-center p-4 justify-center rounded-2xl shadow-lg shadow-gray-400"
             onPress={() => navigation.navigate("DoctorDetail", { doctor })}
           >
-            <Image source={doctor.image} className="w-20 h-20 rounded-lg" />
+            <Image source={doctor.image} className="w-24 h-24 rounded-lg" />
             <Text className="text-sm font-bold mt-3">{doctor.name}</Text>
           </TouchableOpacity>
         ))}

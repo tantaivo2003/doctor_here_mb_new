@@ -1,14 +1,7 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  Image,
-  TouchableOpacity,
-  Pressable,
-} from "react-native";
+import { View, Text, FlatList, Image, TouchableOpacity } from "react-native";
 import Modal from "react-native-modal";
-import { doctorlist, appointments, Appointment } from "../types";
+import { doctorlist, appointments, Appointment } from "../../components/types";
 
 export default function UpcomingAppointments({ navigation }: any) {
   const [modalVisible, setModalVisible] = useState(false);

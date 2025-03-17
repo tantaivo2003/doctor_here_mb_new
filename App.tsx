@@ -4,22 +4,22 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaView, Text, Button, StatusBar } from "react-native";
 
-import Home from "./components/screens/Home";
-import MessageScreen from "./components/screens/MessageScreen";
-import AppointmentScreen from "./components/screens/appointment/AppointmentScreen";
-import AppointmentDetails from "./components/screens/appointment/AppointmentDetails";
-import FindDoctor from "./components/screens/FindDoctor";
-import FavoriteDoctor from "./components/screens/FavoriteDoctor";
-import OfflineAppointment from "./components/screens/OfflineAppointment";
-import OnlineAppointment from "./components/screens/OnlineAppointment";
-import ConfirmAppointment from "./components/screens/ConfirmAppointment";
+import Home from "./screens/Home";
+import MessagesScreen from "./screens/message/MessagesScreen";
+import AppointmentScreen from "./screens/appointment/AppointmentScreen";
+import AppointmentDetails from "./screens/appointment/AppointmentDetails";
+import FindDoctor from "./screens/FindDoctor";
+import FavoriteDoctor from "./screens/FavoriteDoctor";
+import OfflineAppointment from "./screens/OfflineAppointment";
+import OnlineAppointment from "./screens/OnlineAppointment";
+import ConfirmAppointment from "./screens/ConfirmAppointment";
 import {
   HomeIcon,
   MessageIcon,
   AppointmentIcon,
   ProfileIcon,
 } from "./components/icons/TabNavIcons";
-import DoctorDetail from "./components/screens/DoctorDetail";
+import DoctorDetail from "./screens/DoctorDetail";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -123,18 +123,26 @@ export default function App() {
           <Tab.Screen
             name="HomeStack"
             component={HomeStack}
-            options={{ title: "Home", headerShown: false }}
+            options={{ title: "Trang chủ", headerShown: false }}
           />
-          <Tab.Screen name="Messages" component={MessageScreen} />
+          <Tab.Screen
+            name="Messages"
+            component={MessagesScreen}
+            options={{ title: "Tin nhắn", headerTitleAlign: "center" }}
+          />
           <Tab.Screen
             name="AppointmentStack"
             component={AppointmentStack}
             options={{
-              title: "Appointment",
+              title: "Lịch hẹn",
               headerShown: false,
             }}
           />
-          <Tab.Screen name="Profile" component={ProfileScreen} />
+          <Tab.Screen
+            name="Profile"
+            component={ProfileScreen}
+            options={{ title: "Hồ sơ", headerShown: false }}
+          />
         </Tab.Navigator>
       </NavigationContainer>
     </>

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, FlatList, Image, TouchableOpacity } from "react-native";
 
-import { doctorlist, appointments } from "../types";
+import { doctorlist, appointments } from "../../components/types";
 
 import Modal from "react-native-modal";
 export default function CanceledAppointments({ navigation }: any) {

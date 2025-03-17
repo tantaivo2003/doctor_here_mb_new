@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { FontAwesome, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
-import DoctorCard from "../ui/DoctorCard";
+import DoctorCard from "../components/ui/DoctorCard";
 
 export default function DoctorDetail({ navigation, route }: any) {
   const { doctor } = route.params;
@@ -67,7 +67,7 @@ export default function DoctorDetail({ navigation, route }: any) {
 
         <View className="flex-row items-center mb-5">
           <Image
-            source={require("../../assets/doctor_picture/jessica.png")}
+            source={require("../assets/doctor_picture/jessica.png")}
             className="w-16 h-16 rounded-full"
           />
           <View className="ml-5">

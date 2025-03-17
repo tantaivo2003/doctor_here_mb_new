@@ -1,10 +1,14 @@
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { useState } from "react";
-import DoctorCard from "../../ui/DoctorCard";
-import NotificationModal from "../../ui/NotificationModal";
-export default function AppointmentDetails({ navigation, route }: any) {
+import DoctorCard from "../components/ui/DoctorCard";
+import NotificationModal from "../components/ui/NotificationModal";
+export default function ConfirmAppointment({ navigation, route }: any) {
   const { doctor, date, time } = route.params;
   const [isModalVisible, setModalVisible] = useState(false);
+
+  const handleConfirm = () => {
+    setModalVisible(true);
+  };
 
   return (
     <ScrollView className="flex-1 bg-white p-4">
@@ -71,6 +75,27 @@ export default function AppointmentDetails({ navigation, route }: any) {
           <Text className="font-bold text-blue-600">Trả tiền mặt</Text>
         </View>
       </View>
+      <TouchableOpacity
+        className="flex-1 bg-gray-900 py-3 rounded-full items-center mr-2 my-5"
+        onPress={handleConfirm}
+      >
+        <Text className="text-white font-semibold">Xác nhận</Text>
+      </TouchableOpacity>
+      {/* Hiển thị modal */}
+      <NotificationModal
+        visible={isModalVisible}
+        //nếu time là 09:00 AM thì type là error ngược lại
+        type={time === "09:00 AM" ? "error" : "success"}
+        message={
+          time === "09:00 AM"
+            ? "Đặt lịch thất bại, lý do ..."
+            : `Bạn đã đặt lịch khám với bác sĩ ${doctor.name}, vào lúc ${time} ngày ${date}.`
+        }
+        onClose={() => {
+          setModalVisible(false);
+          navigation.popToTop();
+        }}
+      />
     </ScrollView>
   );
 }

@@ -9,9 +9,9 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import ShortcutButton from "../ui/ShortCutButton";
-import SearchIcon from "../icons/SearchIcon";
-import DoctorCard from "../ui/DoctorCard";
+import ShortcutButton from "../components/ui/ShortCutButton";
+import SearchIcon from "../components/icons/SearchIcon";
+import DoctorCard from "../components/ui/DoctorCard";
 
 interface Doctor {
   name: string;
@@ -28,7 +28,7 @@ const doctors: Doctor[] = [
     hospital: "Bệnh viện Bạch Mai",
     rating: 4.5,
     reviews: 100,
-    image: require("../../assets/doctor_picture/jessica.png"),
+    image: require("../assets/doctor_picture/jessica.png"),
   },
   {
     name: "Trần Thị B",
@@ -36,7 +36,7 @@ const doctors: Doctor[] = [
     hospital: "Bệnh viện Chợ Rẫy",
     rating: 4.8,
     reviews: 150,
-    image: require("../../assets/doctor_picture/sarah.png"),
+    image: require("../assets/doctor_picture/sarah.png"),
   },
   {
     name: "Nguyễn Văn A",
@@ -44,7 +44,7 @@ const doctors: Doctor[] = [
     hospital: "Bệnh viện Bạch Mai",
     rating: 4.5,
     reviews: 100,
-    image: require("../../assets/doctor_picture/jessica.png"),
+    image: require("../assets/doctor_picture/jessica.png"),
   },
   {
     name: "Trần Thị B",
@@ -52,7 +52,7 @@ const doctors: Doctor[] = [
     hospital: "Bệnh viện Chợ Rẫy",
     rating: 4.8,
     reviews: 150,
-    image: require("../../assets/doctor_picture/sarah.png"),
+    image: require("../assets/doctor_picture/sarah.png"),
   },
   {
     name: "Nguyễn Văn A",
@@ -60,7 +60,7 @@ const doctors: Doctor[] = [
     hospital: "Bệnh viện Bạch Mai",
     rating: 4.5,
     reviews: 100,
-    image: require("../../assets/doctor_picture/jessica.png"),
+    image: require("../assets/doctor_picture/jessica.png"),
   },
   {
     name: "Trần Thị B",
@@ -68,7 +68,7 @@ const doctors: Doctor[] = [
     hospital: "Bệnh viện Chợ Rẫy",
     rating: 4.8,
     reviews: 150,
-    image: require("../../assets/doctor_picture/sarah.png"),
+    image: require("../assets/doctor_picture/sarah.png"),
   },
   {
     name: "Nguyễn Văn A",
@@ -76,7 +76,7 @@ const doctors: Doctor[] = [
     hospital: "Bệnh viện Bạch Mai",
     rating: 4.5,
     reviews: 100,
-    image: require("../../assets/doctor_picture/jessica.png"),
+    image: require("../assets/doctor_picture/jessica.png"),
   },
   {
     name: "Trần Thị B",
@@ -84,7 +84,7 @@ const doctors: Doctor[] = [
     hospital: "Bệnh viện Chợ Rẫy",
     rating: 4.8,
     reviews: 150,
-    image: require("../../assets/doctor_picture/sarah.png"),
+    image: require("../assets/doctor_picture/sarah.png"),
   },
 ];
 

@@ -1,0 +1,44 @@
+import { View, Text, Image, TouchableOpacity } from "react-native";
+import { FC } from "react";
+import { Message } from "../../components/types"; // Import kiểu Message
+
+interface MessageItemProps {
+  doctor: Message; // Thay thế kiểu object bằng Message
+  onPress: () => void;
+}
+
+export const MessageItem: FC<MessageItemProps> = ({ doctor, onPress }) => {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      className="flex-row items-center p-3 border-b border-gray-200"
+    >
+      {/* Ảnh bác sĩ */}
+      <View className="relative">
+        <Image source={doctor.avatar} className="w-20 h-20 rounded-full" />
+        {/* Chấm xanh trạng thái online */}
+        {doctor.isOnline && (
+          <View className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+        )}
+      </View>
+
+      {/* Nội dung tin nhắn */}
+      <View className="flex-1 ml-3">
+        <Text className="font-semibold text-gray-900">{doctor.name}</Text>
+        <Text className="text-gray-500 text-sm truncate w-48">
+          {doctor.message}
+        </Text>
+      </View>
+
+      {/* Thời gian & số tin nhắn chưa đọc */}
+      <View className="items-end">
+        <Text className="text-xs text-gray-400">{doctor.time}</Text>
+        {doctor.unreadCount > 0 && (
+          <View className="bg-red-500 w-5 h-5 rounded-full items-center justify-center mt-1">
+            <Text className="text-white text-xs">{doctor.unreadCount}</Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+};
