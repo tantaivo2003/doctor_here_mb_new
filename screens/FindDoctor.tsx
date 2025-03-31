@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   Text,
@@ -12,84 +12,40 @@ import {
 import ShortcutButton from "../components/ui/ShortCutButton";
 import SearchIcon from "../components/icons/SearchIcon";
 import DoctorCard from "../components/ui/DoctorCard";
+import { Doctor } from "../types/types";
+import { getAllDoctors } from "../api/Doctor";
 
-interface Doctor {
-  name: string;
-  specialty: string;
-  hospital: string;
-  rating: number;
-  reviews: number;
-  image: any;
-}
-const doctors: Doctor[] = [
-  {
-    name: "Nguyễn Văn A",
-    specialty: "Chuyên khoa nội",
-    hospital: "Bệnh viện Bạch Mai",
-    rating: 4.5,
-    reviews: 100,
-    image: require("../assets/doctor_picture/jessica.png"),
-  },
-  {
-    name: "Trần Thị B",
-    specialty: "Chuyên khoa tim mạch",
-    hospital: "Bệnh viện Chợ Rẫy",
-    rating: 4.8,
-    reviews: 150,
-    image: require("../assets/doctor_picture/sarah.png"),
-  },
-  {
-    name: "Nguyễn Văn A",
-    specialty: "Chuyên khoa nội",
-    hospital: "Bệnh viện Bạch Mai",
-    rating: 4.5,
-    reviews: 100,
-    image: require("../assets/doctor_picture/jessica.png"),
-  },
-  {
-    name: "Trần Thị B",
-    specialty: "Chuyên khoa tim mạch",
-    hospital: "Bệnh viện Chợ Rẫy",
-    rating: 4.8,
-    reviews: 150,
-    image: require("../assets/doctor_picture/sarah.png"),
-  },
-  {
-    name: "Nguyễn Văn A",
-    specialty: "Chuyên khoa nội",
-    hospital: "Bệnh viện Bạch Mai",
-    rating: 4.5,
-    reviews: 100,
-    image: require("../assets/doctor_picture/jessica.png"),
-  },
-  {
-    name: "Trần Thị B",
-    specialty: "Chuyên khoa tim mạch",
-    hospital: "Bệnh viện Chợ Rẫy",
-    rating: 4.8,
-    reviews: 150,
-    image: require("../assets/doctor_picture/sarah.png"),
-  },
-  {
-    name: "Nguyễn Văn A",
-    specialty: "Chuyên khoa nội",
-    hospital: "Bệnh viện Bạch Mai",
-    rating: 4.5,
-    reviews: 100,
-    image: require("../assets/doctor_picture/jessica.png"),
-  },
-  {
-    name: "Trần Thị B",
-    specialty: "Chuyên khoa tim mạch",
-    hospital: "Bệnh viện Chợ Rẫy",
-    rating: 4.8,
-    reviews: 150,
-    image: require("../assets/doctor_picture/sarah.png"),
-  },
-];
+import LoadingAnimation from "../components/ui/LoadingAnimation";
 
-export default function FindDoctor({ navigation }: any) {
-  const [searchTerm, setSearchTerm] = useState("");
+export default function FindDoctor({ navigation, route }: any) {
+  const [searchTerm, setSearchTerm] = useState(route.params?.searchTerm || "");
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      const doctors = await getAllDoctors();
+      setDoctors(doctors);
+      setLoading(false);
+    };
+    fetchDoctors();
+  }, []);
+
+  // Hàm lọc bác sĩ theo từ khóa
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredDoctors(doctors);
+    } else {
+      const filtered = doctors.filter(
+        (doctor) =>
+          doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredDoctors(filtered);
+    }
+  }, [searchTerm, doctors]);
+
   const handleDoctorPress = (doctor: any) => {
     navigation.navigate("DoctorDetail", { doctor });
   };
@@ -109,11 +65,21 @@ export default function FindDoctor({ navigation }: any) {
       </View>
 
       <Text className="text-xl font-bold text-gray-800">Kết quả tìm kiếm</Text>
-      {doctors.map((doctor, index) => (
-        <View key={index} className="mb-3">
-          <DoctorCard {...doctor} onPress={() => handleDoctorPress(doctor)} />
+      {loading ? (
+        <View className="items-center justify-center">
+          <LoadingAnimation />
         </View>
-      ))}
+      ) : filteredDoctors.length === 0 ? (
+        <Text className="text-center text-gray-500 mt-5">
+          Không tìm thấy bác sĩ nào!
+        </Text>
+      ) : (
+        filteredDoctors.map((doctor, index) => (
+          <View key={index} className="mb-3">
+            <DoctorCard {...doctor} onPress={() => handleDoctorPress(doctor)} />
+          </View>
+        ))
+      )}
     </ScrollView>
   );
 }

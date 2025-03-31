@@ -12,6 +12,7 @@ export default function AppointmentScreen() {
         tabBarActiveTintColor: "#000",
         tabBarInactiveTintColor: "#9CA3AF",
         tabBarIndicatorStyle: { backgroundColor: "#000" },
+        tabBarLabelStyle: { fontSize: 14, fontWeight: "bold" },
       }}
     >
       <Tab.Screen name="Sắp diễn ra" component={UpcomingAppointments} />

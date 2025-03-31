@@ -1,0 +1,353 @@
+// Interface định nghĩa dữ liệu bác sĩ
+export interface Doctor {
+  id: string;
+  doctorCode?: string;
+  image: any;
+  name: string;
+  specialty: string;
+  hospital: string;
+  rating: number;
+  reviews: number;
+  experience: number;
+  education?: string;
+  description?: string;
+  clinicAddress?: string;
+  phone?: string;
+  email?: string;
+  gender?: string;
+  birthDate?: string;
+  accountStatus?: boolean;
+  joinedDate?: string;
+}
+
+// Danh sách bác sĩ (một mảng dữ liệu mẫu)
+export const doctorlist: Doctor[] = [
+  {
+    id: "1",
+    name: "Jessica",
+    specialty: "Chuyên khoa nội",
+    hospital: "Bệnh viện Bạch Mai",
+    rating: 4.5,
+    reviews: 100,
+    experience: 10,
+    description: "Bác sĩ chuyên khoa nội",
+    image: require("../assets/doctor_picture/jessica.png"),
+  },
+  {
+    id: "2",
+    name: "Sarah",
+    specialty: "Chuyên khoa tim mạch",
+    hospital: "Bệnh viện Chợ Rẫy",
+    rating: 4.8,
+    reviews: 150,
+    experience: 15,
+    image: require("../assets/doctor_picture/sarah.png"),
+  },
+  {
+    id: "3",
+    name: "Michael",
+    specialty: "Chuyên khoa nội",
+    hospital: "Bệnh viện Bạch Mai",
+    rating: 4.5,
+    reviews: 100,
+    experience: 10,
+    image: require("../assets/doctor_picture/michael.png"),
+  },
+];
+
+export interface Appointment {
+  id?: string;
+  doctor: string; // Tên bác sĩ
+  specialty: string; // Chuyên khoa
+  hospital: string; // Địa chỉ phòng khám
+  date: string; // Ngày hẹn
+  startTime: string; // Thời điểm bắt đầu
+  endTime: string; // Thời điểm kết thúc
+  isOnline: boolean; // Lịch làm việc online hay không
+  image?: any; // Ảnh đại diện của bác sĩ
+}
+
+export const mockAppointments: Appointment[] = [
+  {
+    id: "AP001",
+    doctor: "Sarah",
+    specialty: "Nội tổng quát",
+    hospital: "Phòng khám C, Quận 3",
+    date: "2025-01-02",
+    startTime: "2025-01-02T02:15:00.000Z",
+    endTime: "2025-01-02T02:15:00.000Z",
+    isOnline: false,
+    image: require("../assets/doctor_picture/sarah.png"),
+  },
+];
+
+export interface AppointmentDetail {
+  id: number;
+  additionalText: string; // Văn bản bổ sung
+  clinicAddress: string;
+  status: string;
+  createdAt: string;
+  doctorId: string;
+  patientId: string;
+
+  patientName: string;
+  patientPhone: string;
+  patientGender: string;
+  patientBirthDate: string;
+  patientAddress: string;
+  patientCCCD: string;
+  patientEthnicity: string;
+  patientBloodType: string;
+  patientMedicalHistory: string;
+  patientNationality: string;
+  patientAvatarUrl: any;
+
+  doctorName: string;
+  doctorPhone: string;
+  doctorGender: string;
+  doctorBirthDate: string;
+  doctorSpecialty: string;
+  doctorEducation: string;
+  doctorDescription: string;
+  doctorExperienceDate: string;
+  doctorAvatarUrl: any;
+
+  appointmentStart: string;
+  appointmentEnd: string;
+  workDate: string;
+  isOnline: boolean;
+
+  images: any;
+}
+
+export const mockAppointmentDetail: AppointmentDetail = {
+  id: 1,
+  additionalText: "Patient suffers from headache and dizziness",
+  clinicAddress: "Clinic B, District 2",
+  status: "Completed",
+  createdAt: "2025-01-01T03:00:00.000Z",
+  doctorId: "BS0000001",
+  patientId: "BN0000006",
+
+  patientName: "Nguyễn Thị Hiền",
+  patientPhone: "0123456888",
+  patientGender: "Female",
+  patientBirthDate: "1995-01-15",
+  patientAddress: "20 B Street, District 2, HCMC",
+  patientCCCD: "3131812717281",
+  patientEthnicity: "Tày",
+  patientBloodType: "AB",
+  patientMedicalHistory: "Type 2 diabetes",
+  patientNationality: "Vietnamese",
+  patientAvatarUrl: null,
+
+  doctorName: "Nguyễn Trung Hiếu",
+  doctorPhone: "0123456785",
+  doctorGender: "Female",
+  doctorBirthDate: "1985-01-05",
+  doctorSpecialty: "General Medicine",
+  doctorEducation: "Level 5 education",
+  doctorDescription: "Highly rated by patients",
+  doctorExperienceDate: "2010-09-22",
+  doctorAvatarUrl: null,
+
+  appointmentStart: "2025-01-02T02:15:00.000Z",
+  appointmentEnd: "2025-01-02T02:30:00.000Z",
+  workDate: "2025-01-02",
+  isOnline: false,
+
+  images: [
+    "https://benhviendakhoasontay.vn/wp-content/uploads/2022/07/xem-ket-qua.png",
+  ],
+};
+
+export interface Chat {
+  id: number;
+  name: string;
+  message: string;
+  time: string;
+  avatar: any;
+  unreadCount: number;
+  isOnline: boolean;
+}
+
+// Danh sách tin nhắn giả lập
+export const chatList: Chat[] = [
+  {
+    id: 1,
+    name: "BS. Trung Hiếu",
+    message: "Xin chào",
+    time: "04:20 AM",
+    avatar: require("../assets/doctor_picture/sarah.png"),
+    unreadCount: 3,
+    isOnline: true,
+  },
+  {
+    id: 2,
+    name: "BS. Như Ý",
+    message: "Bạn có gì muốn tư vấn?",
+    time: "04:20 AM",
+    avatar: require("../assets/doctor_picture/jessica.png"),
+    unreadCount: 0,
+    isOnline: false,
+  },
+  {
+    id: 3,
+    name: "BS. Trung Thành",
+    message: "Tôi sẽ hỗ trợ bạn",
+    time: "04:20 AM",
+    avatar: require("../assets/doctor_picture/michael.png"),
+    unreadCount: 0,
+    isOnline: true,
+  },
+];
+
+export interface Message {
+  id: number;
+  sender: string;
+  type: string;
+  content: string | string[]; // Nếu là hình ảnh thì là mảng URL
+  timestamp: string;
+}
+export const messagesList: Message[] = [
+  {
+    id: 1,
+    sender: "doctor",
+    type: "text",
+    content: "Xin chào",
+    timestamp: "07:21",
+  },
+  {
+    id: 2,
+    sender: "user",
+    type: "text",
+    content: "Chào bác sĩ",
+    timestamp: "07:21",
+  },
+  {
+    id: 3,
+    sender: "user",
+    type: "audio",
+    content: "audio_file_url",
+    timestamp: "07:21",
+  },
+  {
+    id: 4,
+    sender: "doctor",
+    type: "image",
+    content: ["image1_url", "image2_url"],
+    timestamp: "09:12",
+  },
+];
+
+export interface LanUong {
+  id: string;
+  gio: string;
+  ten_thuoc: string;
+  ghi_chu: string;
+  image: any;
+  trang_thai: "pending" | "taken";
+}
+
+export const listLanUong: LanUong[] = [
+  {
+    id: "1",
+    gio: "6h30",
+    ten_thuoc: "Thuốc đau đầu",
+    ghi_chu: "Thuốc đau đầu",
+    image: require("../assets/medicine.png"),
+    trang_thai: "taken",
+  },
+  {
+    id: "2",
+    gio: "12h30",
+    ten_thuoc: "Thuốc đau đầu",
+    ghi_chu: "Thuốc đau đầu",
+    image: require("../assets/medicine.png"),
+    trang_thai: "pending",
+  },
+  {
+    id: "3",
+    gio: "19h30",
+    ten_thuoc: "Thuốc đau đầu",
+    ghi_chu: "Thuốc đau lưng",
+    image: require("../assets/medicine.png"),
+    trang_thai: "pending",
+  },
+];
+
+export interface Rating {
+  id: number;
+  score: number;
+  content: string;
+  timestamp: string;
+  appointmentId: number;
+  patient: {
+    id: string;
+    name: string;
+    avatar: any;
+  };
+}
+
+export const mockRatings: Rating[] = [
+  {
+    id: 1,
+    score: 4.5,
+    content: "Bác sĩ rất tận tâm và chuyên nghiệp!",
+    timestamp: "2025-03-17T05:22:19.121Z",
+    appointmentId: 10,
+    patient: {
+      id: "BN0000006",
+      name: "Nguyễn Thị Hiền",
+      avatar: require("../assets/doctor_picture/jessica.png"),
+    },
+  },
+  {
+    id: 2,
+    score: 5.0,
+    content: "Tôi rất hài lòng với dịch vụ.",
+    timestamp: "2025-03-18T10:45:30.121Z",
+    appointmentId: 11,
+    patient: {
+      id: "BN0000010",
+      name: "Trần Văn Nam",
+      avatar: require("../assets/avatar-placeholder.png"),
+    },
+  },
+  {
+    id: 3,
+    score: 3.5,
+    content: "Bác sĩ tận tâm nhưng thời gian chờ hơi lâu.",
+    timestamp: "2025-03-19T08:30:00.121Z",
+    appointmentId: 12,
+    patient: {
+      id: "BN0000020",
+      name: "Lê Thị Hoa",
+      avatar: require("../assets/avatar-placeholder.png"),
+    },
+  },
+  {
+    id: 4,
+    score: 4.0,
+    content: "Tư vấn rất chi tiết, dễ hiểu.",
+    timestamp: "2025-03-20T15:15:45.121Z",
+    appointmentId: 13,
+    patient: {
+      id: "BN0000035",
+      name: "Hoàng Minh Đức",
+      avatar: require("../assets/avatar-placeholder.png"),
+    },
+  },
+  {
+    id: 5,
+    score: 2.5,
+    content: "Bác sĩ khá bận, tôi cảm thấy chưa được tư vấn kỹ.",
+    timestamp: "2025-03-21T12:00:10.121Z",
+    appointmentId: 14,
+    patient: {
+      id: "BN0000040",
+      name: "Phạm Thị Lan",
+      avatar: require("../assets/avatar-placeholder.png"),
+    },
+  },
+];
