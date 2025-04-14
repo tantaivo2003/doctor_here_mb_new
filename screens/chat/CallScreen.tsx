@@ -1,48 +1,33 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
-// import { someVideoCallLibrary, LocalVideo, RemoteVideo } from 'your-video-call-library'; // Thay thế bằng thư viện gọi video bạn chọn
+import { View, Text, TouchableOpacity, Image } from "react-native";
 
-const VideoCallScreen: React.FC = () => {
-  // State quản lý trạng thái tắt/bật micro
+import NotificationModal from "../../components/ui/NotificationModal";
+import Modal from "react-native-modal";
+import Feather from "@expo/vector-icons/Feather";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+
+import { getAvt } from "../../services/storage";
+
+const VideoCallScreen: React.FC = ({ navigation }: any) => {
+  const [patientAvt, setPatientAvt] = useState<string | null>(null);
+
   const [isAudioMuted, setIsAudioMuted] = useState(false);
-  // State quản lý trạng thái tắt/bật video
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-  // State lưu trữ các stream video của người tham gia khác (key có thể là ID người dùng)
+  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const [remoteStreams, setRemoteStreams] = useState({});
-  // Ref để truy cập view hiển thị video cục bộ (video của chính mình)
   const localVideoRef = useRef(null);
 
-  // useEffect chạy một lần khi component mount và một lần khi unmount
+  const [modalVisible, setModalVisible] = useState(false);
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [notificationType, setNotificationType] = useState("success"); // Hoặc "error"
+  const [notificationMessage, setNotificationMessage] = useState("");
+
   useEffect(() => {
-    // TODO: Khởi tạo SDK gọi video ở đây
-    // Ví dụ: someVideoCallLibrary.initialize();
-
-    // TODO: Thiết lập các trình lắng nghe sự kiện cho signaling (thông báo)
-    // Ví dụ:
-    // someVideoCallLibrary.on('remoteStreamAdded', (event) => {
-    //   setRemoteStreams(prevStreams => ({ ...prevStreams, [event.userId]: event.stream }));
-    // });
-    // someVideoCallLibrary.on('participantLeft', (userId) => {
-    //   const newStreams = { ...remoteStreams };
-    //   delete newStreams[userId];
-    //   setRemoteStreams(newStreams);
-    // });
-
-    // TODO: Bắt đầu stream video cục bộ
-    // Ví dụ:
-    // someVideoCallLibrary.startLocalVideo(localVideoRef.current);
-
-    // TODO: Truy cập camera và micro của thiết bị
-    // Bạn có thể cần sử dụng một thư viện như 'react-native-webrtc' hoặc SDK của nhà cung cấp dịch vụ gọi video
-
-    return () => {
-      // TODO: Dọn dẹp tài nguyên khi component bị hủy
-      // Ví dụ:
-      // someVideoCallLibrary.stopLocalVideo();
-      // someVideoCallLibrary.disconnect();
+    const fetchData = async () => {
+      const avt = await getAvt();
+      setPatientAvt(avt);
     };
-  }, []); // Mảng dependency rỗng nghĩa là effect chỉ chạy khi mount và unmount
-
+  }, []);
   // Hàm xử lý việc tắt/bật micro
   const toggleAudio = () => {
     // TODO: Logic để tắt/bật audio cục bộ (thường thông qua SDK gọi video)
@@ -60,71 +45,108 @@ const VideoCallScreen: React.FC = () => {
     // TODO: Logic để kết thúc cuộc gọi
     // Ví dụ: Gửi tín hiệu kết thúc cuộc gọi đến những người tham gia khác
     // Ví dụ: Điều hướng người dùng ra khỏi màn hình gọi video
+    navigation.goBack();
   };
 
   return (
     <View className="flex-1 bg-black">
-      {/* View hiển thị video cục bộ */}
-      {isVideoEnabled && (
-        <View className="absolute top-4 right-4 w-32 h-48 rounded-md overflow-hidden z-10">
-          {/* TODO: Component hiển thị video cục bộ (thay thế Placeholder) */}
-          {/* Ví dụ: <LocalVideo ref={localVideoRef} /> */}
-          <Text className="text-white">Local Video (Placeholder)</Text>
-        </View>
-      )}
+      {/* View hiển thị màn hình của bệnh nhân*/}
 
-      {/* View hiển thị video của những người tham gia khác */}
-      <View className="flex-1 justify-center items-center">
-        {/* Duyệt qua danh sách các stream video từ xa và hiển thị chúng */}
-        {Object.values(remoteStreams).map((stream, index) => (
-          <View
-            key={index}
-            className="w-full h-full rounded-md overflow-hidden"
-          >
-            {/* TODO: Component hiển thị video từ xa (thay thế Placeholder) */}
-            {/* Ví dụ: <RemoteVideo streamId={stream.id} /> */}
-            <Text className="text-white">
-              Remote Video {index + 1} (Placeholder)
-            </Text>
-          </View>
-        ))}
-        {/* Hiển thị thông báo nếu không có người tham gia khác */}
-        {Object.keys(remoteStreams).length === 0 && (
-          <Text className="text-white text-lg">
-            Đang chờ người tham gia khác...
-          </Text>
+      <View className="absolute top-4 right-4 w-32 h-48 rounded-md z-10">
+        {isVideoEnabled ? (
+          <Text>Video</Text>
+        ) : (
+          <Image
+            source={
+              patientAvt
+                ? { uri: patientAvt }
+                : require("../../assets/avatar-placeholder.png")
+            }
+            className="h-full w-full rounded-md"
+          />
         )}
       </View>
 
+      {/* View hiển thị video của bác sĩ */}
+      <View className="flex-1 justify-center items-center">
+        <Image
+          source={{
+            uri: "https://res.cloudinary.com/dpquv4bcu/image/upload/v1744614905/avatar/e9juhyvm3o5t44cuk9v6.jpg",
+          }}
+          className="h-full w-full rounded-md"
+        />
+      </View>
+
       {/* View chứa các nút điều khiển */}
-      <View className="absolute bottom-8 left-0 right-0 flex-row justify-around items-center">
+      <View className="absolute bottom-8 left-0 right-0 flex-row justify-center items-center gap-10">
         {/* Nút tắt/bật micro */}
+
         <TouchableOpacity
           onPress={toggleAudio}
-          className="bg-gray-800 rounded-full p-4"
+          className="bg-teal-600 rounded-full p-4"
         >
-          <Text className="text-white">
-            {isAudioMuted ? "Bật tiếng" : "Tắt tiếng"}
-          </Text>
-        </TouchableOpacity>
-        {/* Nút tắt/bật video */}
-        <TouchableOpacity
-          onPress={toggleVideo}
-          className="bg-red-500 rounded-full p-4"
-        >
-          <Text className="text-white">
-            {isVideoEnabled ? "Tắt video" : "Bật video"}
-          </Text>
+          {isAudioMuted ? (
+            <Feather name="mic-off" size={30} color="white" />
+          ) : (
+            <Feather name="mic" size={30} color="white" />
+          )}
         </TouchableOpacity>
         {/* Nút kết thúc cuộc gọi */}
         <TouchableOpacity
           onPress={hangUp}
-          className="bg-red-600 rounded-full p-4"
+          className="bg-red-500 rounded-full p-4"
         >
-          <Text className="text-white">Kết thúc</Text>
+          <MaterialIcons name="call-end" size={30} color="white" />
         </TouchableOpacity>
+        {/* Nút tắt/bật video */}
+        <TouchableOpacity
+          onPress={toggleVideo}
+          className="bg-teal-600 rounded-full p-4"
+        >
+          {isVideoEnabled ? (
+            <Feather name="video" size={30} color="white" />
+          ) : (
+            <Feather name="video-off" size={30} color="white" />
+          )}
+        </TouchableOpacity>
+
         {/* TODO: Thêm các nút điều khiển khác như chuyển camera */}
       </View>
+
+      {/* Modal thông báo */}
+      <NotificationModal
+        visible={notificationVisible}
+        type={notificationType}
+        message={notificationMessage}
+        onClose={() => setNotificationVisible(false)}
+      />
+
+      {/* Modal gia hạn */}
+      <Modal
+        isVisible={modalVisible}
+        animationIn="zoomIn"
+        animationOut="zoomOut"
+      >
+        <View className="justify-center items-center">
+          <View className="bg-white rounded-2xl p-6 items-center">
+            <Text className="text-lg font-bold text-center">
+              Xóa khỏi bác sĩ yêu thích?
+            </Text>
+
+            <View className="flex-row justify-around mt-4 gap-5">
+              <TouchableOpacity
+                className="py-3 px-6 bg-gray-100 w-2/5 items-center rounded-full"
+                onPress={() => setModalVisible(false)}
+              >
+                <Text>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="py-3 px-6 bg-gray-900 w-2/5 items-center rounded-full">
+                <Text className="text-white">Xác nhận</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
