@@ -2,7 +2,7 @@ import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { FC } from "react";
 import { FontAwesome } from "@expo/vector-icons";
 import { ChatListItem } from "../../components/chat/ChatListItem";
-import { chatList } from "../../types/types"; // Đảm bảo import đúng
+import { chatList } from "../../types/types";
 
 const ChatListScreen: FC = ({ navigation }: any) => {
   const handlePressMessage = (doctorId: number) => {

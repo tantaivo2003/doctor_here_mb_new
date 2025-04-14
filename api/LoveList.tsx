@@ -22,15 +22,15 @@ export const getLoveList = async (patientId: string): Promise<Doctor[]> => {
 
     return data.map((item: any) => ({
       id: item.ma_bac_si,
-      name: item.Bac_si.Nguoi_dung.ho_va_ten,
-      specialty: item.Bac_si.chuyen_khoa,
-      hospital: item.Bac_si.dia_chi_pk,
-      rating: Math.floor(Math.random() * (5 - 3 + 1)) + 3,
-      reviews: Math.floor(Math.random() * 100) + 1,
-      experience: Math.floor(Math.random() * 10) + 1,
-      image:
-        item.Bac_si.Nguoi_dung.avt_url ||
-        require("../assets/avatar-placeholder.png"),
+      name: item.ho_va_ten,
+      specialty: item.chuyen_khoa,
+      hospital: item.dia_chi_pk,
+      rating: item.diem_danh_gia_trung_binh,
+      reviews: item.tong_so_danh_gia,
+      experience:
+        new Date().getFullYear() - new Date(item.ngay_vao_nghe).getFullYear(),
+      image: item.avt_url,
+      description: item.mo_ta,
     }));
   } catch (error) {
     console.error(error);

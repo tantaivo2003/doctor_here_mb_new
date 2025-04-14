@@ -7,11 +7,15 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaView, Text, Button, StatusBar } from "react-native";
+import Toast from "react-native-toast-message";
+import { toastConfig } from "./components/ui/toastConfig";
+import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 
 import Home from "./screens/Home";
-import ChatListScreen from "./screens/chat/ChatListScreen";
-import ChatDetailScreen from "./screens/chat/ChatDetailScreen";
+import ChatStack from "./screens/chat/ChatStack";
 import HealthMetricsScreen from "./screens/HealthMetrics/HealthMetricsScreen";
+import DiagnosisList from "./screens/diagnosisResult/DiagnosisList";
+import DiagnosisDetails from "./screens/diagnosisResult/DiagnosisDetail";
 import AppointmentScreen from "./screens/appointment/AppointmentScreen";
 import AppointmentDetails from "./screens/appointment/AppointmentDetails";
 import FindDoctor from "./screens/FindDoctor";
@@ -20,11 +24,9 @@ import OfflineAppointment from "./screens/OfflineAppointment";
 import OnlineAppointment from "./screens/OnlineAppointment";
 import ConfirmAppointment from "./screens/ConfirmAppointment";
 
-import Login from "./screens/auth/Login";
-import Signup from "./screens/auth/Signup";
-import CreateProfile from "./screens/auth/CreateProfile";
-
-import MedicineSchedule from "./screens/medicineSchedule/MedicineSchedule";
+import AuthStack from "./screens/auth/AuthStack";
+import UserProfileStack from "./screens/userProfile/UserProfileStack";
+import MedicineScheduleScreen from "./screens/medicineSchedule/MedicineSchedule";
 import {
   HomeIcon,
   MessageIcon,
@@ -86,8 +88,21 @@ const HomeStack = () => (
     />
     <Stack.Screen
       name="MedicineSchedule"
-      component={MedicineSchedule}
+      component={MedicineScheduleScreen}
       options={{ title: "Lịch uống thuốc", headerTitleAlign: "center" }}
+    />
+    <Stack.Screen
+      name="DiagnosisList"
+      component={DiagnosisList}
+      options={{ title: "Kết quả khám", headerTitleAlign: "center" }}
+    />
+    <Stack.Screen
+      name="DiagnosisDetails"
+      component={DiagnosisDetails}
+      options={{
+        title: "Chi tiết kết quả khám bệnh",
+        headerTitleAlign: "center",
+      }}
     />
     <Stack.Screen
       name="HealthMetricsScreen"
@@ -119,68 +134,6 @@ const AppointmentStack = () => (
   </Stack.Navigator>
 );
 
-const ChatStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen
-      name="Chat"
-      component={ChatListScreen}
-      options={{ title: "Tin nhắn", headerTitleAlign: "center" }}
-    />
-    <Stack.Screen
-      name="ChatDetailScreen"
-      component={ChatDetailScreen}
-      options={{
-        title: "Trò chuyện",
-        headerTitleAlign: "center",
-        headerShown: false,
-      }}
-    />
-  </Stack.Navigator>
-);
-
-// const HealthMetricsStack = () => (
-//   <Stack.Navigator>
-//     <Stack.Screen
-//       name="HealthMetricsScreen"
-//       component={HealthMetricsScreen}
-//       options={{ title: "Chỉ số sức khỏe", headerTitleAlign: "center" }}
-//     />
-//   </Stack.Navigator>
-// );
-
-const AuthStack = () => {
-  const [initialRoute, setInitialRoute] = useState<"CreateProfile" | "Login">(
-    "Login"
-  );
-  useEffect(() => {
-    const checkProfile = async () => {
-      const hasProfile = await AsyncStorage.getItem("user_id");
-      if (hasProfile) {
-        setInitialRoute("CreateProfile");
-      }
-    };
-    checkProfile();
-  }, []);
-  return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="Login"
-        component={Login}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Signup"
-        component={Signup}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="CreateProfile"
-        component={CreateProfile}
-        options={{ title: "Tạo hồ sơ ban đầu", headerShown: false }}
-      />
-    </Stack.Navigator>
-  );
-};
 export default function App() {
   return (
     <>
@@ -200,7 +153,7 @@ export default function App() {
                   return (
                     <AppointmentIcon color={color} width={size} height={size} />
                   );
-                case "AuthStack":
+                case "UserProfileStack":
                   return (
                     <ProfileIcon color={color} width={size} height={size} />
                   );
@@ -210,6 +163,22 @@ export default function App() {
             },
             tabBarActiveTintColor: "#1C1E20",
             tabBarInactiveTintColor: "#9CA3AF",
+            // --- Thêm logic để ẩn Tab Bar ---
+            tabBarStyle: ((route) => {
+              // Lấy tên màn hình đang focus bên trong Stack Navigator (nếu có)
+              const routeName = getFocusedRouteNameFromRoute(route) ?? "";
+              // Kiểm tra nếu tab hiện tại là 'ChatStack' VÀ màn hình bên trong là 'VideoCallScreen'
+              if (
+                route.name === "ChatStack" &&
+                routeName === "VideoCallScreen"
+              ) {
+                // Ẩn tab bar
+                return { display: "none" };
+              }
+              // Ngược lại, hiển thị tab bar (hoặc trả về undefined để dùng style mặc định)
+              return undefined; // Hoặc { display: 'flex' }
+            })(route), // <-- Truyền route vào hàm IIFE (Immediately Invoked Function Expression)
+            // --- Kết thúc logic ẩn Tab Bar ---
           })}
         >
           <Tab.Screen
@@ -235,8 +204,14 @@ export default function App() {
             component={AuthStack}
             options={{ title: "Hồ sơ", headerShown: false }}
           />
+          <Tab.Screen
+            name="UserProfileStack"
+            component={UserProfileStack}
+            options={{ title: "Hồ sơ", headerShown: false }}
+          />
         </Tab.Navigator>
       </NavigationContainer>
+      <Toast config={toastConfig} />
     </>
   );
 }

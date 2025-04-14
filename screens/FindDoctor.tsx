@@ -47,6 +47,7 @@ export default function FindDoctor({ navigation, route }: any) {
   }, [searchTerm, doctors]);
 
   const handleDoctorPress = (doctor: any) => {
+    console.log(doctor);
     navigation.navigate("DoctorDetail", { doctor });
   };
   return (

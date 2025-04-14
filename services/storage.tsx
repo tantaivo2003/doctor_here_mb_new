@@ -7,17 +7,40 @@ const FAVORITE_DOCTORS_KEY = "favorite_doctors";
 export const storeAuthData = async (
   userId: string,
   token: string,
-  role: string
+  role: string,
+  username: string,
+  fullName: string,
+  avtUrl: string
 ) => {
   try {
+    console.log("Lưu thông tin đăng nhập:");
     await AsyncStorage.setItem("user_id", userId);
     await AsyncStorage.setItem("auth_token", token);
     await AsyncStorage.setItem("user_role", role);
+    await AsyncStorage.setItem("username", username);
+    await AsyncStorage.setItem("full_name", fullName);
+    await AsyncStorage.setItem("avt_url", avtUrl);
   } catch (error) {
     console.error("Lỗi khi lưu token:", error);
   }
 };
 
+/**Lấy Auth data */
+export const getAuthData = async () => {
+  try {
+    const userId = await AsyncStorage.getItem("user_id");
+    const token = await AsyncStorage.getItem("auth_token");
+    const role = await AsyncStorage.getItem("user_role");
+    const username = await AsyncStorage.getItem("username");
+    const fullName = await AsyncStorage.getItem("full_name");
+    const avtUrl = await AsyncStorage.getItem("avt_url");
+
+    return { userId, token, role, username, fullName, avtUrl };
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin đăng nhập:", error);
+    return null;
+  }
+};
 /**
  * Lưu user ID vào AsyncStorage
  */
@@ -52,6 +75,26 @@ export const removeUserID = async (): Promise<void> => {
   }
 };
 
+/*
+ *Lấy username từ AsyncStorage
+ */
+export const getUsername = async (): Promise<string | null> => {
+  try {
+    return await AsyncStorage.getItem("username");
+  } catch (error) {
+    console.error("Lỗi khi lấy username:", error);
+    return null;
+  }
+};
+
+/**Lưu username */
+export const storeUsername = async (username: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem("username", username);
+  } catch (error) {
+    console.error("Lỗi khi lưu username:", error);
+  }
+};
 /**
  * Lưu JWT Token vào AsyncStorage
  */
@@ -83,6 +126,34 @@ export const removeToken = async (): Promise<void> => {
     await AsyncStorage.removeItem("auth_token");
   } catch (error) {
     console.error("Lỗi khi xóa token:", error);
+  }
+};
+
+/**Lấy avt của user */
+export const getAvt = async (): Promise<string | null> => {
+  try {
+    return await AsyncStorage.getItem("avt_url");
+  } catch (error) {
+    console.error("Lỗi khi lấy avt:", error);
+    return null;
+  }
+};
+
+/**Lưu avt của user */
+export const storeAvt = async (avtUrl: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem("avt_url", avtUrl);
+  } catch (error) {
+    console.error("Lỗi khi lưu avt:", error);
+  }
+};
+
+/** Lưu full name của user */
+export const storeFullName = async (fullName: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem("full_name", fullName);
+  } catch (error) {
+    console.error("Lỗi khi lưu full name:", error);
   }
 };
 
@@ -275,5 +346,17 @@ export const generateAndStoreFakeHealthData = async () => {
     console.log("✅ Dữ liệu sức khỏe giả đã được lưu vào AsyncStorage!");
   } catch (error) {
     console.error("❌ Lỗi khi tạo dữ liệu giả:", error);
+  }
+};
+
+/*
+ * xóa tất cả dữ liệu trong AsyncStorage
+ */
+export const clearAsyncStorage = async () => {
+  try {
+    await AsyncStorage.clear();
+    console.log("✅ Đã xóa tất cả dữ liệu trong AsyncStorage!");
+  } catch (error) {
+    console.error("❌ Lỗi khi xóa dữ liệu:", error);
   }
 };

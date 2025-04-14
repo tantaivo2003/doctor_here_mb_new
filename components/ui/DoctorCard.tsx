@@ -92,7 +92,15 @@ const DoctorCard: FC<DoctorCardProps> = ({
       className="flex-row items-center p-3 rounded-2xl bg-white shadow-md w-full"
     >
       <View className="w-28 h-28 rounded-xl overflow-hidden flex items-center justify-center">
-        <Image source={image} className="w-full h-full" resizeMode="cover" />
+        <Image
+          source={
+            image
+              ? { uri: image }
+              : require("../../assets/avatar-placeholder.png")
+          }
+          className="w-full h-full"
+          resizeMode="cover"
+        />
       </View>
 
       {/* Thông tin bác sĩ */}
@@ -119,7 +127,11 @@ const DoctorCard: FC<DoctorCardProps> = ({
         <View className="flex-row items-center mt-2">
           <FontAwesome name="star" size={16} color="#FACC15" />
           <Text className="text-sm font-semibold text-gray-800 ml-1">
-            {rating}
+            {typeof rating === "string"
+              ? parseFloat(rating).toFixed(1)
+              : typeof rating === "number"
+              ? rating.toFixed(1)
+              : rating}
           </Text>
           <Text className="text-sm text-gray-500 ml-1">
             | {reviews.toLocaleString()} đánh giá

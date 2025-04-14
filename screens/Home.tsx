@@ -31,7 +31,7 @@ const systemShortcuts = [
     icon: "file-medical",
     title: "Kết quả khám bệnh",
     color: "#9AC8A5",
-    linkingto: "MedicineSchedule",
+    linkingto: "DiagnosisList",
   },
   {
     icon: "heartbeat",
@@ -171,7 +171,14 @@ export default function Home({ navigation }: any) {
             className="bg-white flex flex-col items-center p-4 justify-center rounded-2xl shadow-lg shadow-gray-400"
             onPress={() => navigation.navigate("DoctorDetail", { doctor })}
           >
-            <Image source={doctor.image} className="w-24 h-24 rounded-lg" />
+            <Image
+              source={
+                doctor.image
+                  ? { uri: doctor.image }
+                  : require("../assets/avatar-placeholder.png")
+              }
+              className="w-24 h-24 rounded-lg"
+            />
             <Text className="text-sm text-center font-bold max-w-24 mt-3">
               {doctor.name}
             </Text>

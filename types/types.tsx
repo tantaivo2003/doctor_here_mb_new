@@ -65,21 +65,10 @@ export interface Appointment {
   endTime: string; // Thời điểm kết thúc
   isOnline: boolean; // Lịch làm việc online hay không
   image?: any; // Ảnh đại diện của bác sĩ
+  ratingScore?: number;
+  ratingContent?: string;
+  ratingTime?: string;
 }
-
-export const mockAppointments: Appointment[] = [
-  {
-    id: "AP001",
-    doctor: "Sarah",
-    specialty: "Nội tổng quát",
-    hospital: "Phòng khám C, Quận 3",
-    date: "2025-01-02",
-    startTime: "2025-01-02T02:15:00.000Z",
-    endTime: "2025-01-02T02:15:00.000Z",
-    isOnline: false,
-    image: require("../assets/doctor_picture/sarah.png"),
-  },
-];
 
 export interface AppointmentDetail {
   id: number;
@@ -276,6 +265,28 @@ export const listLanUong: LanUong[] = [
   },
 ];
 
+export interface MedicineIntake {
+  id: number;
+  time: string; // gio
+  date: string; // ngay
+  prescriptionId: number; // don_thuoc
+  reminder: boolean; // nhac_nho
+  takenAt: string | null; // thoi_diem_da_uong
+  period: string; // buoi_uong
+}
+
+export interface MedicineSchedule {
+  id: number;
+  diagnosisResultId: number; // id_ket_qua
+  startDate: string; // ngay_bat_dau
+  endDate: string; // ngay_ket_thuc
+  status: string; // trang_thai
+  note: string; // ghi_chu
+  prescriptionName: string; // ten_don_thuoc
+  patientId: string; // ma_benh_nhan
+  intakes: MedicineIntake[]; // Lan_uong
+}
+
 export interface Rating {
   id: number;
   score: number;
@@ -351,3 +362,91 @@ export const mockRatings: Rating[] = [
     },
   },
 ];
+
+export interface GioHen {
+  id: number;
+  thoi_diem_bat_dau: string;
+  thoi_diem_ket_thuc: string;
+}
+
+export interface LichNgay {
+  thu: string;
+  ngay_lam_viec: string;
+  gio_hen: GioHen[];
+}
+
+export interface Patient {
+  id: number;
+  patientCode: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  gender: string;
+  birthDate: string;
+  avatarUrl: string;
+  cccd?: string;
+
+  address?: string;
+  nationality?: string;
+  ethnicity?: string;
+  bloodType?: string;
+  medicalHistory?: string;
+
+  insurance?: {
+    insuranceCode: string;
+    registeredHospital: string;
+    issueDate: string;
+    expiryDate: string;
+  };
+
+  accountStatus?: boolean;
+  joinedDate?: string;
+}
+
+export interface InsuranceInfo {
+  medicalHistory: string; // tiền_sử_bệnh
+  bloodType: string; // nhóm_máu
+  insuranceCode: string; // mã_bhyt
+  registeredHospital: string; // bv_đăng_ký
+  issuedDate: string; // ngày_cấp
+  expiredDate: string; // ngày_hết_hạn
+}
+
+export interface DiagnosisResult {
+  id: number;
+  diagnosisResult: string;
+  additionalNotes: string;
+  appointmentId: number;
+  doctorId: string;
+  clinicAddress: string;
+  startTime: string;
+  endTime: string;
+  department: string;
+  doctorName: string;
+  doctorAvatarUrl: string;
+}
+
+export interface DiagnosisDetail {
+  id: number;
+  diagnosisResult: string;
+  additionalNote: string;
+  appointmentId: number;
+  doctorId: string;
+  clinicAddress: string;
+  startTime: string;
+  endTime: string;
+  doctorFullName: string;
+  doctorAvatarUrl: string;
+  doctorSpecialty: string;
+  images: string[]; // nếu là mảng URL, bạn có thể thay thành { url: string }[] nếu cần thêm thông tin
+  prescriptionId: number | null;
+  prescriptionStartDate: string | null;
+  prescriptionEndDate: string | null;
+  prescriptionNote: string | null;
+  medicines: {
+    id: number;
+    name: string;
+    unit: string;
+    quantity: number;
+  }[];
+}

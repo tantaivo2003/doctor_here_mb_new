@@ -1,6 +1,5 @@
 import {
   Appointment,
-  mockAppointments,
   AppointmentDetail,
   mockAppointmentDetail,
 } from "../types/types";
@@ -10,7 +9,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 /* Lấy danh sách cuộc hẹn của patient theo status. 
 1: Đã đặt lịch, 2: Đã hoàn thành, 3: Đã hủy */
 export const getAppointment = async (
-  patientId: number,
+  patientId: string,
   status: number
 ): Promise<Appointment[]> => {
   try {
@@ -27,12 +26,9 @@ export const getAppointment = async (
     }
 
     const data = await response.json();
-    if (data.length === 0) {
-      console.log("Không có lịch hẹn nào");
-      return mockAppointments;
-    }
 
     return data.map((item: any) => ({
+      id: item.id,
       doctor: item.Bac_si.Nguoi_dung.ho_va_ten,
       specialty: item.Bac_si.chuyen_khoa,
       hospital: item.Bac_si.dia_chi_pk,
@@ -40,9 +36,10 @@ export const getAppointment = async (
       startTime: item.Gio_hen.thoi_diem_bat_dau,
       endTime: item.Gio_hen.thoi_diem_ket_thuc,
       isOnline: item.Gio_hen.Ca_lam_viec_trong_tuan.lam_viec_onl,
-      image:
-        item.Bac_si.Nguoi_dung.avt_url ||
-        require("../assets/avatar-placeholder.png"),
+      image: item.Bac_si.Nguoi_dung.avt_url,
+      ratingScore: item.Danh_gia?.diem_danh_gia,
+      ratingContent: item.Danh_gia?.noi_dung,
+      ratingTime: item.Danh_gia?.thoi_diem,
     }));
   } catch (error) {
     console.error("Lỗi API getAppointment:", error);
@@ -109,5 +106,73 @@ export const fetchAppointmentDetail = async (
   } catch (error) {
     console.error("Error fetching appointment detail:", error);
     return mockAppointmentDetail;
+  }
+};
+export const fetchDoctorCalendar = async (
+  drID: string,
+  startTime: string,
+  endTime: string,
+  isOnlMethod: boolean
+) => {
+  try {
+    const url = `${API_BASE_URL}/api/timeslot?drID=${encodeURIComponent(
+      drID
+    )}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(
+      endTime
+    )}&isOnlMethod=${isOnlMethod}`;
+
+    const response = await fetch(url);
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Lỗi fetchCalendarData:", error);
+    return null;
+  }
+};
+
+export const createAppointment = async (data: any): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/appointment/create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (response.status === 201) {
+      return true;
+    } else {
+      const errorData = await response.json();
+      const message = errorData?.message || "Đã xảy ra lỗi khi tạo cuộc hẹn.";
+      throw new Error(message);
+    }
+  } catch (error: any) {
+    throw new Error(error.message || "Lỗi mạng khi gọi API.");
+  }
+};
+
+export const cancelAppointment = async (appointmentId: string) => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/appointment/cancel/${appointmentId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Hủy lịch hẹn thất bại");
+    }
+
+    return true; // Hủy thành công
+  } catch (error: any) {
+    console.error("Lỗi khi hủy lịch hẹn:", error.message);
+    throw error;
   }
 };

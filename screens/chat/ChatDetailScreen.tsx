@@ -39,7 +39,10 @@ const ChatDetailScreen: FC = ({ navigation }: any) => {
           className="w-10 h-10 rounded-full ml-3"
         />
         <Text className="ml-3 font-bold text-lg">BS. Trung Hiếu</Text>
-        <TouchableOpacity className="ml-auto">
+        <TouchableOpacity
+          className="ml-auto"
+          onPress={() => navigation.navigate("VideoCallScreen")}
+        >
           <Ionicons name="call-outline" size={24} color="black" />
         </TouchableOpacity>
       </View>

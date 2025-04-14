@@ -48,7 +48,11 @@ export default function DoctorDetail({ navigation, route }: any) {
               <FontAwesome5 name="star" size={20} color="#374151" />
             </View>
             <Text className="text-lg font-bold text-gray-800 mt-1">
-              {doctor.rating}
+              {typeof doctor.rating === "string"
+                ? parseFloat(doctor.rating).toFixed(1)
+                : typeof doctor.rating === "number"
+                ? doctor.rating.toFixed(1)
+                : doctor.rating}
             </Text>
             <Text className="text-sm text-gray-500">đánh giá</Text>
           </View>
@@ -94,7 +98,11 @@ export default function DoctorDetail({ navigation, route }: any) {
                 <View key={index}>
                   <View className="flex-row items-center">
                     <Image
-                      source={rating.patient.avatar}
+                      source={
+                        rating.patient.avatar
+                          ? { uri: rating.patient.avatar }
+                          : require("../assets/avatar-placeholder.png")
+                      }
                       className="w-16 h-16 rounded-full"
                     />
                     <View className="ml-4">
@@ -142,7 +150,7 @@ export default function DoctorDetail({ navigation, route }: any) {
 
         <View className="flex-row justify-between">
           <TouchableOpacity
-            className="flex-1 bg-teal-500 py-3 rounded-full items-center mr-2"
+            className="flex-1 bg-blue-500 py-3 rounded-full items-center mr-2"
             onPress={() => navigation.navigate("OnlineAppointment", { doctor })}
           >
             <Text className="text-white font-semibold">
@@ -151,7 +159,7 @@ export default function DoctorDetail({ navigation, route }: any) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="flex-1 bg-gray-900 py-3 rounded-full items-center"
+            className="flex-1 bg-blue-500 py-3 rounded-full items-center"
             onPress={() =>
               navigation.navigate("OfflineAppointment", { doctor })
             }

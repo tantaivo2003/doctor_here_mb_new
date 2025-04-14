@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { loginUser } from "../../api/Auth";
 import NotificationModal from "../../components/ui/NotificationModal";
+import LoadingModal from "../../components/ui/LoadingModal";
 const Login = ({ navigation }: any) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -11,11 +12,19 @@ const Login = ({ navigation }: any) => {
   const [notificationMessage, setNotificationMessage] = useState("");
   const [notificationType, setNotificationType] = useState("");
 
+  const [loading, setLoading] = useState(false);
+
   const handleLogin = async () => {
+    setLoading(true);
     const result = await loginUser(username, password);
 
     if (result.success) {
-      if (result.success) {
+      // Kiểm tra nếu có mã 302 từ server
+      if (result.message === "302") {
+        // Chuyển hướng đến trang tạo hồ sơ mới
+        navigation.navigate("CreateProfile", { username });
+      } else {
+        // Đăng nhập thành công, chuyển hướng đến trang chính
         navigation.reset({
           index: 0,
           routes: [{ name: "HomeStack" }],
@@ -68,7 +77,7 @@ const Login = ({ navigation }: any) => {
 
       {/* Social Login */}
       <View className="h-[1px] w-full my-8 bg-gray-300" />
-      <TouchableOpacity className="border border-gray-300 w-full p-3 rounded-xl flex-row items-center justify-center mb-3">
+      {/* <TouchableOpacity className="border border-gray-300 w-full p-3 rounded-xl flex-row items-center justify-center mb-3">
         <Image
           source={require("../../assets/google.png")}
           className="w-5 h-5 mr-2"
@@ -81,7 +90,7 @@ const Login = ({ navigation }: any) => {
           className="w-5 h-5 mr-2"
         />
         <Text>Đăng nhập bằng Facebook</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* Forgot Password & Register */}
       <TouchableOpacity className="mt-4">
@@ -100,6 +109,11 @@ const Login = ({ navigation }: any) => {
         message={notificationMessage}
         onClose={() => setNotificationVisible(false)}
       />
+
+      {/* Loading Modal */}
+      {loading && <LoadingModal />}
+
+      {/* Footer */}
     </View>
   );
 };

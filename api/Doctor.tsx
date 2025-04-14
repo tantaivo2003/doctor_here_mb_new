@@ -24,8 +24,7 @@ export const getAllDoctors = async (): Promise<Doctor[]> => {
       description: item.mo_ta,
       experience:
         new Date().getFullYear() - new Date(item.ngay_vao_nghe).getFullYear(),
-      image:
-        item.Nguoi_dung.avt_url || require("../assets/avatar-placeholder.png"),
+      image: item.Nguoi_dung.avt_url,
     }));
   } catch (error) {
     console.error("Lỗi API getAllDoctors:", error);

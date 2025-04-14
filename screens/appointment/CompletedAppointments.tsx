@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -14,7 +15,9 @@ import { getUserID } from "../../services/storage";
 import { getAppointment } from "../../api/Appointment";
 import { formatDateTime } from "../../utils/formatDateTime";
 
-import LoadingAnimation from "../../components/ui/LoadingAnimation";
+import LoadingModal from "../../components/ui/LoadingModal";
+import NotificationModal from "../../components/ui/NotificationModal";
+import { createRating } from "../../api/Rating";
 
 export default function CompletedAppointments({ navigation }: any) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -22,50 +25,84 @@ export default function CompletedAppointments({ navigation }: any) {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment>();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [notificationType, setNotificationType] = useState(true); // true for success, false for error
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        const patientId = await getUserID(); // Lấy patientId từ AsyncStorage
-        if (!patientId) {
-          console.error("Không tìm thấy patientId trong AsyncStorage");
-          return;
+  useFocusEffect(
+    useCallback(() => {
+      const fetchAppointments = async () => {
+        setLoading(true);
+        try {
+          const patientId = await getUserID();
+          if (!patientId) {
+            console.error("Không tìm thấy patientId trong AsyncStorage");
+            return;
+          }
+
+          const status = 2; // Chỉ lấy các lịch hẹn sắp tới
+          const data = await getAppointment(patientId, status);
+          setAppointments(data);
+        } catch (error) {
+          console.error("Lỗi khi lấy lịch hẹn:", error);
+          setNotificationMessage("Lỗi khi lấy lịch hẹn");
+          setNotificationType(false);
+          setNotificationVisible(true);
+        } finally {
+          setLoading(false);
         }
+      };
 
-        const status = 2;
-        const data = await getAppointment(Number(patientId), status);
-        setAppointments(data);
-      } catch (error) {
-        console.error("Lỗi khi lấy lịch hẹn:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAppointments();
-  }, []);
+      fetchAppointments();
+    }, [])
+  );
 
   const handleRatingPress = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setModalVisible(true);
   };
 
-  const confirmRating = () => {
-    console.log("Đã gửi đánh giá:", {
-      rating,
-      comment,
-      doctor: selectedAppointment?.doctor,
-    });
-    setModalVisible(false);
-    setRating(0);
-    setComment("");
+  const confirmRating = async () => {
+    try {
+      const patientCode = await getUserID();
+
+      if (!selectedAppointment?.id || !patientCode) {
+        return;
+      }
+
+      const payload = {
+        score: rating,
+        content: comment,
+        appointmentId: selectedAppointment.id,
+        patientCode,
+      };
+
+      console.log("Sending rating:", payload);
+      await createRating(payload);
+
+      // Reset UI state
+      setModalVisible(false);
+      setRating(0);
+      setComment("");
+    } catch (error) {
+      console.error("Lỗi khi gửi đánh giá:", error);
+      setNotificationMessage("Lỗi khi gửi đánh giá");
+      setNotificationType(false);
+      setNotificationVisible(true);
+    }
   };
 
+  if (loading && appointments.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-100">
+        <Text className="text-gray-500 text-lg">Không có lịch hẹn nào</Text>
+      </View>
+    );
+  }
   return (
     <View className="flex-1 bg-gray-100">
-      {loading && <LoadingAnimation />}
       <FlatList
         data={appointments}
         keyExtractor={(item) => item.id || Math.random().toString()}
@@ -98,7 +135,11 @@ export default function CompletedAppointments({ navigation }: any) {
             <View className="flex-row items-center">
               <View className="w-28 h-28 rounded-xl overflow-hidden flex items-center justify-center">
                 <Image
-                  source={item.image}
+                  source={
+                    item.image
+                      ? { uri: item.image }
+                      : require("../../assets/avatar-placeholder.png")
+                  }
                   className="w-full h-full"
                   resizeMode="cover"
                 />
@@ -163,6 +204,15 @@ export default function CompletedAppointments({ navigation }: any) {
           </View>
         </View>
       </Modal>
+      {/* Loading Modal */}
+      {loading && <LoadingModal />}
+      {/* Notification Modal */}
+      <NotificationModal
+        visible={notificationVisible}
+        message={notificationMessage}
+        type={notificationType ? "success" : "error"}
+        onClose={() => setNotificationVisible(false)}
+      />
     </View>
   );
 }
