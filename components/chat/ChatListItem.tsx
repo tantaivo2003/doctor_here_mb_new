@@ -15,24 +15,32 @@ export const ChatListItem: FC<ChatListItemProps> = ({ doctor, onPress }) => {
     >
       {/* Ảnh bác sĩ */}
       <View className="relative">
-        <Image source={doctor.avatar} className="w-20 h-20 rounded-full" />
+        {/* avatar: "https://res.cloudinary.com/dpquv4bcu/image/upload/v1743839971/bs2_rknmrj.jpg */}
+        <Image
+          className="w-16 h-16 rounded-full"
+          source={
+            doctor.avatar
+              ? { uri: doctor.avatar }
+              : require("../../assets/avatar-placeholder.png")
+          }
+        />
         {/* Chấm xanh trạng thái online */}
-        {doctor.isOnline && (
+        {/* {doctor.isOnline && (
           <View className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-        )}
+        )} */}
       </View>
 
       {/* Nội dung tin nhắn */}
       <View className="flex-1 ml-3">
         <Text className="font-semibold text-gray-900">{doctor.name}</Text>
-        <Text className="text-gray-500 text-sm truncate w-48">
+        {/* <Text className="text-gray-500 text-sm truncate w-48">
           {doctor.message}
-        </Text>
+        </Text> */}
       </View>
 
       {/* Thời gian & số tin nhắn chưa đọc */}
       <View className="items-end">
-        <Text className="text-xs text-gray-400">{doctor.time}</Text>
+        {/* <Text className="text-xs text-gray-400">{doctor.time}</Text> */}
         {doctor.unreadCount > 0 && (
           <View className="bg-red-500 w-5 h-5 rounded-full items-center justify-center mt-1">
             <Text className="text-white text-xs">{doctor.unreadCount}</Text>

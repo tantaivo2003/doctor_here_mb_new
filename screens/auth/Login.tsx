@@ -5,6 +5,7 @@ import { useState } from "react";
 import { loginUser } from "../../api/Auth";
 import NotificationModal from "../../components/ui/NotificationModal";
 import LoadingModal from "../../components/ui/LoadingModal";
+
 const Login = ({ navigation }: any) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

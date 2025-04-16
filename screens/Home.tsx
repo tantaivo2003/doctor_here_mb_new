@@ -19,6 +19,7 @@ import {
   storeFavoriteDoctors,
 } from "../services/storage";
 import { getLoveList } from "../api/LoveList";
+import { registerUser } from "../socket";
 
 const systemShortcuts = [
   {
@@ -65,6 +66,16 @@ export default function Home({ navigation }: any) {
   const [patientId, setPatientId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [lovedDoctors, setLovedDoctors] = useState<Doctor[]>([]);
+
+  useEffect(() => {
+    const registerSocket = async () => {
+      const userId = "BN0000006";
+      if (userId) {
+        registerUser(userId);
+      }
+    };
+    registerSocket();
+  }, []);
 
   useEffect(() => {
     const fetchUserId = async () => {

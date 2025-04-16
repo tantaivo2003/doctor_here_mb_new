@@ -10,6 +10,7 @@ const ChatStack = () => (
       name="Chat"
       component={ChatListScreen}
       options={{ title: "Tin nhắn", headerTitleAlign: "center" }}
+      key={Math.random()}
     />
     <Stack.Screen
       name="ChatDetailScreen"

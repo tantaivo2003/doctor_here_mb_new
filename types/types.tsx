@@ -195,7 +195,7 @@ export interface Message {
   id: number;
   sender: string;
   type: string;
-  content: string | string[]; // Nếu là hình ảnh thì là mảng URL
+  content: string;
   timestamp: string;
 }
 export const messagesList: Message[] = [
@@ -224,7 +224,8 @@ export const messagesList: Message[] = [
     id: 4,
     sender: "doctor",
     type: "image",
-    content: ["image1_url", "image2_url"],
+    content:
+      "https://res.cloudinary.com/dpquv4bcu/image/upload/v1744614905/avatar/e9juhyvm3o5t44cuk9v6.jpg",
     timestamp: "09:12",
   },
 ];
