@@ -1,13 +1,13 @@
 import { View, Text, Image, TouchableOpacity } from "react-native";
 import { FC } from "react";
-import { Message } from "../../components/types"; // Import kiểu Message
+import { Chat } from "../../types/types"; // Import kiểu Chat
 
-interface MessageItemProps {
-  doctor: Message; // Thay thế kiểu object bằng Message
+interface ChatListItemProps {
+  doctor: Chat; // Thay thế kiểu object bằng Chat
   onPress: () => void;
 }
 
-export const MessageItem: FC<MessageItemProps> = ({ doctor, onPress }) => {
+export const ChatListItem: FC<ChatListItemProps> = ({ doctor, onPress }) => {
   return (
     <TouchableOpacity
       onPress={onPress}

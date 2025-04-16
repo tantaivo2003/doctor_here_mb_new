@@ -9,30 +9,11 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import ShortcutButton from "../components/ui/ShortCutButton";
-import SearchIcon from "../components/icons/SearchIcon";
+import { Doctor } from "../types/types";
 import DoctorCard from "../components/ui/DoctorCard";
 
-interface Doctor {
-  name: string;
-  specialty: string;
-  hospital: string;
-  rating: number;
-  reviews: number;
-  image: any;
-}
-const doctors: Doctor[] = [
-  {
-    name: "Nguyễn Văn A",
-    specialty: "Chuyên khoa nội",
-    hospital: "Bệnh viện Bạch Mai",
-    rating: 4.5,
-    reviews: 100,
-    image: require("../assets/doctor_picture/jessica.png"),
-  },
-];
-
-export default function FavoriteDoctor({ navigation }: any) {
+export default function FavoriteDoctor({ navigation, route }: any) {
+  const { doctors } = route.params as { doctors: Doctor[] };
   const handleDoctorPress = (doctor: any) => {
     navigation.navigate("DoctorDetail", { doctor });
   };
@@ -43,11 +24,7 @@ export default function FavoriteDoctor({ navigation }: any) {
     >
       {doctors.map((doctor, index) => (
         <View key={index} className="mb-3">
-          <DoctorCard
-            {...doctor}
-            isFavorite={true}
-            onPress={() => handleDoctorPress(doctor)}
-          />
+          <DoctorCard {...doctor} onPress={() => handleDoctorPress(doctor)} />
         </View>
       ))}
     </ScrollView>

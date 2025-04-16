@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   SafeAreaView,
   Text,
@@ -11,13 +12,39 @@ import {
 } from "react-native";
 import ShortcutButton from "../components/ui/ShortCutButton";
 import SearchIcon from "../components/icons/SearchIcon";
-import { doctorlist, Doctor } from "../components/types";
+import { Doctor } from "../types/types";
+import {
+  storeUserID,
+  getUserID,
+  storeFavoriteDoctors,
+} from "../services/storage";
+import { getLoveList } from "../api/LoveList";
 
 const systemShortcuts = [
-  { icon: "pills", title: "Lịch uống thuốc", color: "#EFA8A8" },
-  { icon: "file-medical", title: "Kết quả khám bệnh", color: "#9AC8A5" },
-  { icon: "heartbeat", title: "Chỉ số sức khỏe", color: "#F4B183" },
-  { icon: "users", title: "Gia đình", color: "#C5AEDC" },
+  {
+    icon: "pills",
+    title: "Lịch uống thuốc",
+    color: "#EFA8A8",
+    linkingto: "MedicineSchedule",
+  },
+  {
+    icon: "file-medical",
+    title: "Kết quả khám bệnh",
+    color: "#9AC8A5",
+    linkingto: "DiagnosisList",
+  },
+  {
+    icon: "heartbeat",
+    title: "Chỉ số sức khỏe",
+    color: "#F4B183",
+    linkingto: "HealthMetricsScreen",
+  },
+  {
+    icon: "users",
+    title: "Gia đình",
+    color: "#C5AEDC",
+    linkingto: "MedicineSchedule",
+  },
 ];
 
 const specialist1Shortcuts = [
@@ -35,7 +62,31 @@ const specialist2Shortcuts = [
 ];
 
 export default function Home({ navigation }: any) {
+  const [patientId, setPatientId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [lovedDoctors, setLovedDoctors] = useState<Doctor[]>([]);
+
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const userId = await getUserID();
+      setPatientId(userId);
+    };
+    fetchUserId();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchDoctors = async () => {
+        if (!patientId) return;
+        const data = await getLoveList(patientId);
+        setLovedDoctors(data);
+        storeFavoriteDoctors(data);
+      };
+
+      fetchDoctors();
+    }, [patientId])
+  );
+
   return (
     <ScrollView
       className="flex-1 bg-white p-4"
@@ -51,7 +102,10 @@ export default function Home({ navigation }: any) {
           value={searchTerm}
           onChangeText={setSearchTerm}
           className="flex-1 outline-none px-2 text-base"
-          onPress={() => navigation.navigate("FindDoctorScreen")}
+          // onPress={() => navigation.navigate("FindDoctorScreen")}
+          onSubmitEditing={() =>
+            navigation.navigate("FindDoctorScreen", { searchTerm })
+          }
         />
       </View>
       <Text className="text-xl font-bold text-gray-800 mb-5">Lối tắt</Text>
@@ -60,7 +114,7 @@ export default function Home({ navigation }: any) {
           <ShortcutButton
             key={index}
             {...item}
-            onPress={() => console.log(item.title)}
+            onPress={() => navigation.navigate(item.linkingto)}
           />
         ))}
       </View>
@@ -74,7 +128,11 @@ export default function Home({ navigation }: any) {
             <ShortcutButton
               key={index}
               {...item}
-              onPress={() => console.log(item.title)}
+              onPress={() =>
+                navigation.navigate("FindDoctorScreen", {
+                  searchTerm: item.title,
+                })
+              }
             />
           ))}
         </View>
@@ -83,7 +141,11 @@ export default function Home({ navigation }: any) {
             <ShortcutButton
               key={index}
               {...item}
-              onPress={() => console.log(item.title)}
+              onPress={() =>
+                navigation.navigate("FindDoctorScreen", {
+                  searchTerm: item.title,
+                })
+              }
             />
           ))}
         </View>
@@ -93,20 +155,33 @@ export default function Home({ navigation }: any) {
         <Text className="text-xl font-bold text-gray-800">
           Bác sĩ bạn yên thích
         </Text>
-        <TouchableOpacity onPress={() => navigation.navigate("FavoriteDoctor")}>
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate("FavoriteDoctor", { doctors: lovedDoctors })
+          }
+        >
           <Text className="text-blue-500">Xem tất cả</Text>
         </TouchableOpacity>
       </View>
 
-      <View className="flex flex-row gap-3 mb-10 justify-between">
-        {doctorlist.map((doctor, index) => (
+      <View className="flex flex-row gap-3 mb-10 justify-center">
+        {lovedDoctors.slice(0, 3).map((doctor, index) => (
           <TouchableOpacity
             key={index}
             className="bg-white flex flex-col items-center p-4 justify-center rounded-2xl shadow-lg shadow-gray-400"
             onPress={() => navigation.navigate("DoctorDetail", { doctor })}
           >
-            <Image source={doctor.image} className="w-24 h-24 rounded-lg" />
-            <Text className="text-sm font-bold mt-3">{doctor.name}</Text>
+            <Image
+              source={
+                doctor.image
+                  ? { uri: doctor.image }
+                  : require("../assets/avatar-placeholder.png")
+              }
+              className="w-24 h-24 rounded-lg"
+            />
+            <Text className="text-sm text-center font-bold max-w-24 mt-3">
+              {doctor.name}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>

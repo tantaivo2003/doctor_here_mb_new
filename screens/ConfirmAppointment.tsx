@@ -1,26 +1,115 @@
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
-import { useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  TextInput,
+} from "react-native";
+import { useState, useEffect } from "react";
 import DoctorCard from "../components/ui/DoctorCard";
 import NotificationModal from "../components/ui/NotificationModal";
+import { Patient } from "../types/types";
+import { fetchPatientDetail } from "../api/Patient";
+import LoadingAnimation from "../components/ui/LoadingAnimation";
+import LoadingModal from "../components/ui/LoadingModal";
+import { createAppointment } from "../api/Appointment";
+import { getUserID } from "../services/storage";
 export default function ConfirmAppointment({ navigation, route }: any) {
-  const { doctor, date, time } = route.params;
+  const { doctor, date, time, reason, images } = route.params;
+  const [user, setUser] = useState<Patient>();
   const [isModalVisible, setModalVisible] = useState(false);
+  const [notificationType, setNotificationType] = useState("");
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadingModal, setLoadingModal] = useState(false);
 
-  const handleConfirm = () => {
-    setModalVisible(true);
+  const handleConfirm = async () => {
+    setLoadingModal(true);
+    const appointmentInformation = {
+      textContent: reason.trim(),
+      ptID: await getUserID(), // lấy id người dùng từ storage
+      drID: doctor.id, // đảm bảo lấy đúng id
+      timeslotID: time.id,
+      urls: images,
+    };
+
+    const success = await createAppointment(appointmentInformation);
+    if (success) {
+      setModalVisible(true);
+      setNotificationType("success");
+      setNotificationMessage("Đặt lịch khám thành công!");
+    } else {
+      setModalVisible(true);
+      setNotificationType("error");
+      setNotificationMessage("Đã xảy ra lỗi khi đặt lịch khám.");
+    }
+    setLoadingModal(false);
   };
 
+  useEffect(() => {
+    const getUserDetail = async () => {
+      try {
+        const result = await fetchPatientDetail();
+
+        if (result) {
+          setUser(result);
+          console.log("Thông tin người dùng:", result);
+        } else {
+          console.warn("Không tìm thấy thông tin người dùng");
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy thông tin người dùng:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getUserDetail();
+  }, []);
   return (
     <ScrollView className="flex-1 bg-white p-4">
       <DoctorCard {...doctor} />
 
       {/* Hộp chứa thông tin */}
+      <View className="flex-row my-5 items-center justify-between">
+        <Text className="text-xl font-bold text-gray-800">
+          Thông tin bổ sung
+        </Text>
+      </View>
+      <TextInput
+        className="border p-4 rounded-xl mb-4"
+        placeholder="Lý do khám / triệu chứng"
+        editable={false}
+        value={`Lý do khám: ${reason}`}
+      />
+
+      {images.length > 0 && (
+        <View className="flex-row flex-wrap gap-3 ml-2 mb-4 ">
+          {images.map((uri: string, index: number) => (
+            <View
+              key={index}
+              className="w-[31%] relative rounded-xl overflow-hidden border border-gray-200"
+            >
+              <Image
+                source={{ uri }}
+                key={index}
+                className="w-full h-64"
+                resizeMode="cover"
+              />
+            </View>
+          ))}
+        </View>
+      )}
       <View className="bg-white rounded-2xl shadow-md p-4 mt-3 border border-gray-200">
         {/* Giờ khám & Ngày khám */}
         <View className="flex-row justify-between mb-4">
           <View>
             <Text className="text-gray-500">Giờ khám</Text>
-            <Text className="font-bold text-gray-900">{time}</Text>
+            <Text className="font-bold text-gray-900">
+              {time.thoi_diem_bat_dau.split(" ")[0].substring(0, 5)} -{" "}
+              {time.thoi_diem_ket_thuc.split(" ")[0].substring(0, 5)}
+            </Text>
           </View>
           <View>
             <Text className="text-gray-500">Ngày khám</Text>
@@ -31,24 +120,26 @@ export default function ConfirmAppointment({ navigation, route }: any) {
         {/* Thông tin cá nhân */}
         <View className="border-t border-gray-300 pt-4">
           <Text className="text-gray-500">Họ và tên</Text>
-          <Text className="font-bold text-gray-900 mb-2">
-            Nguyễn Phương Duy
-          </Text>
+          <Text className="font-bold text-gray-900 mb-2">{user?.fullName}</Text>
 
           <Text className="text-gray-500">Giới tính</Text>
-          <Text className="font-bold text-gray-900 mb-2">Nam</Text>
+          <Text className="font-bold text-gray-900 mb-2">{user?.gender}</Text>
 
           <Text className="text-gray-500">Ngày sinh</Text>
-          <Text className="font-bold text-gray-900 mb-2">10/11/2003</Text>
+          <Text className="font-bold text-gray-900 mb-2">
+            {user?.birthDate}
+          </Text>
 
           <Text className="text-gray-500">SĐT</Text>
-          <Text className="font-bold text-gray-900 mb-2">0123456789</Text>
+          <Text className="font-bold text-gray-900 mb-2">{user?.phone}</Text>
 
           <Text className="text-gray-500">BHYT</Text>
-          <Text className="font-bold text-gray-900 mb-2">--------</Text>
+          <Text className="font-bold text-gray-900 mb-2">
+            {user?.insurance?.insuranceCode}
+          </Text>
 
           <Text className="text-gray-500">CCCD</Text>
-          <Text className="font-bold text-gray-900 mb-2">--------</Text>
+          <Text className="font-bold text-gray-900 mb-2">{user?.cccd}</Text>
         </View>
 
         {/* Chi phí */}
@@ -76,7 +167,7 @@ export default function ConfirmAppointment({ navigation, route }: any) {
         </View>
       </View>
       <TouchableOpacity
-        className="flex-1 bg-gray-900 py-3 rounded-full items-center mr-2 my-5"
+        className="flex-1 bg-blue-500 py-3 rounded-full items-center mr-2 my-5"
         onPress={handleConfirm}
       >
         <Text className="text-white font-semibold">Xác nhận</Text>
@@ -85,17 +176,23 @@ export default function ConfirmAppointment({ navigation, route }: any) {
       <NotificationModal
         visible={isModalVisible}
         //nếu time là 09:00 AM thì type là error ngược lại
-        type={time === "09:00 AM" ? "error" : "success"}
-        message={
-          time === "09:00 AM"
-            ? "Đặt lịch thất bại, lý do ..."
-            : `Bạn đã đặt lịch khám với bác sĩ ${doctor.name}, vào lúc ${time} ngày ${date}.`
-        }
+        type={notificationType}
+        message={notificationMessage}
         onClose={() => {
-          setModalVisible(false);
-          navigation.popToTop();
+          if (notificationType === "success") {
+            setModalVisible(false);
+            navigation.popToTop();
+          } else {
+            setModalVisible(false);
+          }
         }}
       />
+      {loading && (
+        <View className="flex-1 justify-center items-center">
+          <LoadingAnimation />
+        </View>
+      )}
+      {loadingModal && <LoadingModal />}
     </ScrollView>
   );
 }

@@ -5,7 +5,7 @@ import Svg, { Rect, Path } from "react-native-svg";
 
 interface NotificationModalProps {
   visible: boolean;
-  type: "success" | "error"; // Phân loại thành công hoặc thất bại
+  type: string; // Phân loại thành công hoặc thất bại
   message: string;
   onClose: () => void;
 }

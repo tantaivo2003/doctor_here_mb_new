@@ -1,36 +1,89 @@
+import { useEffect } from "react";
 import { View, Text, Image, TouchableOpacity } from "react-native";
 import { FC, useState } from "react";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import Modal from "react-native-modal";
 
+import {
+  storeFavoriteDoctors,
+  isDoctorFavorite,
+  addFavoriteDoctor,
+  removeFavoriteDoctor,
+  getUserID,
+} from "../../services/storage";
+
+import { addToLoveList, removeFromLoveList } from "../../api/LoveList";
 interface DoctorCardProps {
+  id: string;
   name: string;
   specialty: string;
   hospital: string;
   rating: number;
   reviews: number;
   image: any;
-  isFavorite?: boolean;
   onPress?: () => void;
 }
 
 const DoctorCard: FC<DoctorCardProps> = ({
+  id,
   name,
   specialty,
   hospital,
   rating,
   reviews,
   image,
-  isFavorite = false,
   onPress,
 }) => {
-  const [favorite, setFavorite] = useState(isFavorite);
+  const [favorite, setFavorite] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState(name);
 
-  const confirmCancel = () => {
+  /* Kiểm tra xem doctor có trong danh sách yêu thích hay không */
+  useEffect(() => {
+    const checkFavorite = async () => {
+      const favorite = await isDoctorFavorite(id);
+      setFavorite(favorite);
+    };
+    checkFavorite();
+  }, [id]);
+
+  /* Hàm xử lí khi ấn vào nút yêu thích, khi đã yêu thích thì hiển thị modal, còn khi chưa yêu thích thì thêm vào dsach */
+  const handleFavorite = async () => {
+    if (favorite) {
+      setModalVisible(true);
+    } else {
+      setFavorite(true);
+      const patientId = await getUserID(); // Lấy ID bệnh nhân từ AsyncStorage
+      const doctorId = id; // ID bác sĩ cần thêm
+
+      if (patientId) {
+        const success = await addToLoveList(patientId, doctorId);
+        if (success) {
+          console.log("Thêm bác sĩ vào danh sách yêu thích thành công!");
+        } else {
+          console.log("Thêm bác sĩ thất bại!");
+        }
+      } else {
+        console.log("Không tìm thấy ID bệnh nhân");
+      }
+    }
+  };
+  const confirmCancel = async () => {
     setFavorite(false);
     setModalVisible(false);
+    const patientId = await getUserID(); // Lấy ID bệnh nhân từ AsyncStorage
+    const doctorId = id; // ID bác sĩ cần xóa
+
+    if (patientId) {
+      const success = await removeFromLoveList(patientId, doctorId);
+      if (success) {
+        console.log("Xóa bác sĩ khỏi danh sách yêu thích thành công!");
+      } else {
+        console.log("Xóa bác sĩ thất bại!");
+      }
+    } else {
+      console.log("Không tìm thấy ID bệnh nhân");
+    }
   };
 
   return (
@@ -39,14 +92,22 @@ const DoctorCard: FC<DoctorCardProps> = ({
       className="flex-row items-center p-3 rounded-2xl bg-white shadow-md w-full"
     >
       <View className="w-28 h-28 rounded-xl overflow-hidden flex items-center justify-center">
-        <Image source={image} className="w-full h-full" resizeMode="cover" />
+        <Image
+          source={
+            image
+              ? { uri: image }
+              : require("../../assets/avatar-placeholder.png")
+          }
+          className="w-full h-full"
+          resizeMode="cover"
+        />
       </View>
 
       {/* Thông tin bác sĩ */}
       <View className="flex-1 ml-4">
         <View className="flex-row justify-between">
           <Text className="text-lg font-bold text-gray-900">{name}</Text>
-          <TouchableOpacity onPress={() => setModalVisible(true)}>
+          <TouchableOpacity onPress={() => handleFavorite()}>
             <FontAwesome
               name={favorite ? "heart" : "heart-o"}
               size={20}
@@ -66,7 +127,11 @@ const DoctorCard: FC<DoctorCardProps> = ({
         <View className="flex-row items-center mt-2">
           <FontAwesome name="star" size={16} color="#FACC15" />
           <Text className="text-sm font-semibold text-gray-800 ml-1">
-            {rating}
+            {typeof rating === "string"
+              ? parseFloat(rating).toFixed(1)
+              : typeof rating === "number"
+              ? rating.toFixed(1)
+              : rating}
           </Text>
           <Text className="text-sm text-gray-500 ml-1">
             | {reviews.toLocaleString()} đánh giá

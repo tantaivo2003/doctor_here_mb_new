@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -9,72 +10,144 @@ import {
 } from "react-native";
 import StarRating from "react-native-star-rating-widget";
 import Modal from "react-native-modal";
-import { doctorlist, appointments, Appointment } from "../../components/types";
+import { doctorlist, Appointment } from "../../types/types";
+import { getUserID } from "../../services/storage";
+import { getAppointment } from "../../api/Appointment";
+import { formatDateTime } from "../../utils/formatDateTime";
+
+import LoadingModal from "../../components/ui/LoadingModal";
+import NotificationModal from "../../components/ui/NotificationModal";
+import { createRating } from "../../api/Rating";
 
 export default function CompletedAppointments({ navigation }: any) {
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] =
-    useState<Appointment | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment>();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [notificationType, setNotificationType] = useState(true); // true for success, false for error
+
+  const [loading, setLoading] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchAppointments = async () => {
+        setLoading(true);
+        try {
+          const patientId = await getUserID();
+          if (!patientId) {
+            console.error("Không tìm thấy patientId trong AsyncStorage");
+            return;
+          }
+
+          const status = 2; // Chỉ lấy các lịch hẹn sắp tới
+          const data = await getAppointment(patientId, status);
+          setAppointments(data);
+        } catch (error) {
+          console.error("Lỗi khi lấy lịch hẹn:", error);
+          setNotificationMessage("Lỗi khi lấy lịch hẹn");
+          setNotificationType(false);
+          setNotificationVisible(true);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchAppointments();
+    }, [])
+  );
 
   const handleRatingPress = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setModalVisible(true);
   };
 
-  const confirmRating = () => {
-    console.log("Đã gửi đánh giá:", {
-      rating,
-      comment,
-      doctor: selectedAppointment?.doctor,
-    });
-    setModalVisible(false);
-    setRating(0);
-    setComment("");
+  const confirmRating = async () => {
+    try {
+      const patientCode = await getUserID();
+
+      if (!selectedAppointment?.id || !patientCode) {
+        return;
+      }
+
+      const payload = {
+        score: rating,
+        content: comment,
+        appointmentId: selectedAppointment.id,
+        patientCode,
+      };
+
+      console.log("Sending rating:", payload);
+      await createRating(payload);
+
+      // Reset UI state
+      setModalVisible(false);
+      setRating(0);
+      setComment("");
+    } catch (error) {
+      console.error("Lỗi khi gửi đánh giá:", error);
+      setNotificationMessage("Lỗi khi gửi đánh giá");
+      setNotificationType(false);
+      setNotificationVisible(true);
+    }
   };
 
+  if (loading && appointments.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-100">
+        <Text className="text-gray-500 text-lg">Không có lịch hẹn nào</Text>
+      </View>
+    );
+  }
   return (
     <View className="flex-1 bg-gray-100">
       <FlatList
         data={appointments}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id || Math.random().toString()}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <TouchableOpacity
             className="bg-white rounded-lg shadow-md p-4 mb-4 mx-4 mt-4"
             onPress={() =>
               navigation.navigate("AppointmentDetails", {
-                doctor: doctorlist[Number(item.id) - 1],
+                doctor: {
+                  id: item.id,
+                  name: item.doctor,
+                  specialty: item.specialty,
+                  hospital: item.hospital,
+                  rating: 4.5,
+                  reviews: 120,
+                  image: item.image,
+                },
                 date: item.date,
-                time: item.time,
+                startTime: item.startTime,
               })
             }
           >
             {/* Ngày giờ */}
             <Text className="text-gray-600 font-semibold mb-2">
-              {item.date} - {item.time}
+              {formatDateTime(item.startTime)}
             </Text>
             <View className="h-[1px] bg-gray-300 my-2" />
             {/* Thông tin bác sĩ */}
             <View className="flex-row items-center">
               <View className="w-28 h-28 rounded-xl overflow-hidden flex items-center justify-center">
                 <Image
-                  source={doctorlist[Number(item.id) - 1].image}
+                  source={
+                    item.image
+                      ? { uri: item.image }
+                      : require("../../assets/avatar-placeholder.png")
+                  }
                   className="w-full h-full"
                   resizeMode="cover"
                 />
               </View>
               <View className="ml-4">
-                <Text className="font-bold text-lg">
-                  {doctorlist[Number(item.id) - 1].name}
-                </Text>
-                <Text className="text-gray-500">
-                  {doctorlist[Number(item.id) - 1].specialty}
-                </Text>
-                <Text className="text-gray-400">
-                  🏥 {doctorlist[Number(item.id) - 1].hospital}
-                </Text>
+                <Text className="font-bold text-lg">{item.doctor}</Text>
+                <Text className="text-gray-500">{item.specialty}</Text>
+                <Text className="text-gray-400">{item.hospital}</Text>
               </View>
             </View>
             {/* Nút đánh giá */}
@@ -131,6 +204,15 @@ export default function CompletedAppointments({ navigation }: any) {
           </View>
         </View>
       </Modal>
+      {/* Loading Modal */}
+      {loading && <LoadingModal />}
+      {/* Notification Modal */}
+      <NotificationModal
+        visible={notificationVisible}
+        message={notificationMessage}
+        type={notificationType ? "success" : "error"}
+        onClose={() => setNotificationVisible(false)}
+      />
     </View>
   );
 }
