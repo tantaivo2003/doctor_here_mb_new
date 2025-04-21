@@ -70,6 +70,12 @@ export interface Appointment {
   ratingTime?: string;
 }
 
+export interface AppointmentRating {
+  diem_danh_gia: number;
+  noi_dung: string;
+  thoi_diem: string;
+}
+
 export interface AppointmentDetail {
   id: number;
   additionalText: string; // Văn bản bổ sung
@@ -107,6 +113,8 @@ export interface AppointmentDetail {
   isOnline: boolean;
 
   images: any;
+
+  rating?: AppointmentRating;
 }
 
 export const mockAppointmentDetail: AppointmentDetail = {
@@ -372,7 +380,7 @@ export interface GioHen {
 export interface LichNgay {
   thu: string;
   ngay_lam_viec: string;
-  gio_hen: GioHen[];
+  Gio_hen: GioHen[];
 }
 
 export interface Patient {

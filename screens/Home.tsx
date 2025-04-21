@@ -102,10 +102,10 @@ export default function Home({ navigation }: any) {
           value={searchTerm}
           onChangeText={setSearchTerm}
           className="flex-1 outline-none px-2 text-base"
-          // onPress={() => navigation.navigate("FindDoctorScreen")}
-          onSubmitEditing={() =>
-            navigation.navigate("FindDoctorScreen", { searchTerm })
-          }
+          onPress={() => navigation.navigate("FindDoctorScreen")}
+          // onSubmitEditing={() =>
+          //   navigation.navigate("FindDoctorScreen", { searchTerm })
+          // }
         />
       </View>
       <Text className="text-xl font-bold text-gray-800 mb-5">Lối tắt</Text>
@@ -128,11 +128,7 @@ export default function Home({ navigation }: any) {
             <ShortcutButton
               key={index}
               {...item}
-              onPress={() =>
-                navigation.navigate("FindDoctorScreen", {
-                  searchTerm: item.title,
-                })
-              }
+              onPress={() => navigation.navigate("FindDoctorScreen")}
             />
           ))}
         </View>
@@ -141,11 +137,7 @@ export default function Home({ navigation }: any) {
             <ShortcutButton
               key={index}
               {...item}
-              onPress={() =>
-                navigation.navigate("FindDoctorScreen", {
-                  searchTerm: item.title,
-                })
-              }
+              onPress={() => navigation.navigate("FindDoctorScreen")}
             />
           ))}
         </View>

@@ -14,6 +14,7 @@ import { doctorlist, Appointment } from "../../types/types";
 import { getUserID } from "../../services/storage";
 import { getAppointment } from "../../api/Appointment";
 import { formatDateTime } from "../../utils/formatDateTime";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import LoadingModal from "../../components/ui/LoadingModal";
 import NotificationModal from "../../components/ui/NotificationModal";
@@ -79,7 +80,6 @@ export default function CompletedAppointments({ navigation }: any) {
         patientCode,
       };
 
-      console.log("Sending rating:", payload);
       await createRating(payload);
 
       // Reset UI state
@@ -112,17 +112,7 @@ export default function CompletedAppointments({ navigation }: any) {
             className="bg-white rounded-lg shadow-md p-4 mb-4 mx-4 mt-4"
             onPress={() =>
               navigation.navigate("AppointmentDetails", {
-                doctor: {
-                  id: item.id,
-                  name: item.doctor,
-                  specialty: item.specialty,
-                  hospital: item.hospital,
-                  rating: 4.5,
-                  reviews: 120,
-                  image: item.image,
-                },
-                date: item.date,
-                startTime: item.startTime,
+                appointment: item,
               })
             }
           >
@@ -147,15 +137,27 @@ export default function CompletedAppointments({ navigation }: any) {
               <View className="ml-4">
                 <Text className="font-bold text-lg">{item.doctor}</Text>
                 <Text className="text-gray-500">{item.specialty}</Text>
-                <Text className="text-gray-400">{item.hospital}</Text>
+                <View className="flex-row items-center mt-1">
+                  <MaterialIcons name="location-on" size={16} color="#6B7280" />
+                  <Text className="text-gray-400">{item.hospital}</Text>
+                </View>
               </View>
             </View>
             {/* Nút đánh giá */}
             <TouchableOpacity
-              className="mt-4 bg-gray-900 p-2 rounded-full"
+              className={`mt-4 rounded-full px-4 py-2 ${
+                item.ratingContent === undefined ? "bg-blue-500" : "bg-gray-300"
+              }`}
               onPress={() => handleRatingPress(item)}
+              disabled={item.ratingContent !== undefined}
             >
-              <Text className="text-center text-white font-semibold">
+              <Text
+                className={`text-center font-semibold ${
+                  item.ratingContent === undefined
+                    ? "text-white"
+                    : "text-gray-500"
+                }`}
+              >
                 Đánh giá
               </Text>
             </TouchableOpacity>

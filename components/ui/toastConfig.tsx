@@ -11,8 +11,8 @@ export const toastConfig = {
       style={{
         borderLeftColor: "#22c55e",
         borderRadius: 10,
-        width: width - 20, // Chiếm gần full screen
-        minHeight: 80, // Tăng chiều cao
+        width: width - 20,
+        minHeight: 80,
         paddingVertical: 12,
         justifyContent: "center",
       }}
@@ -20,7 +20,7 @@ export const toastConfig = {
         paddingHorizontal: 20,
       }}
       text1Style={{
-        fontSize: 20, // To hơn
+        fontSize: 20,
         fontWeight: "700",
         color: "#16a34a",
       }}
@@ -28,6 +28,7 @@ export const toastConfig = {
         fontSize: 16,
         color: "#4ade80",
       }}
+      text2NumberOfLines={5}
     />
   ),
 
@@ -54,6 +55,7 @@ export const toastConfig = {
         fontSize: 16,
         color: "#f87171",
       }}
+      text2NumberOfLines={5}
     />
   ),
 };

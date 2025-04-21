@@ -18,7 +18,7 @@ import DiagnosisList from "./screens/diagnosisResult/DiagnosisList";
 import DiagnosisDetails from "./screens/diagnosisResult/DiagnosisDetail";
 import AppointmentScreen from "./screens/appointment/AppointmentScreen";
 import AppointmentDetails from "./screens/appointment/AppointmentDetails";
-import FindDoctor from "./screens/FindDoctor";
+import FindDoctor from "./screens/doctor/FindDoctor";
 import FavoriteDoctor from "./screens/FavoriteDoctor";
 import OfflineAppointment from "./screens/OfflineAppointment";
 import OnlineAppointment from "./screens/OnlineAppointment";
@@ -33,7 +33,7 @@ import {
   AppointmentIcon,
   ProfileIcon,
 } from "./components/icons/TabNavIcons";
-import DoctorDetail from "./screens/DoctorDetail";
+import DoctorDetail from "./screens/doctor/DoctorDetail";
 import { getUserID } from "./services/storage";
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();

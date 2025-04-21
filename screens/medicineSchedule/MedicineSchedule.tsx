@@ -18,6 +18,7 @@ import {
 import { MedicineIntake, MedicineSchedule } from "../../types/types";
 import MedicineItem from "../../components/medicineSchedule/MedicineItem";
 import { getUserID } from "../../services/storage";
+import Toast from "react-native-toast-message";
 
 const MedicineScheduleScreen = () => {
   const [medicineIntakes, setMedicineIntakes] = useState<MedicineIntake[]>([]);
@@ -41,6 +42,7 @@ const MedicineScheduleScreen = () => {
     const dayStr = dayjs(selectedDay).format("YYYY-MM-DD");
     const data = await fetchMedicineSchedule(patientId, dayStr, dayStr);
     setSchedules(data);
+    console.log("Lịch trình thuốc:", data);
     setMedicineIntakes(data[0]?.intakes || []);
   };
 
@@ -59,17 +61,34 @@ const MedicineScheduleScreen = () => {
       const scheduleId = selectedMedicine.id;
       const drankTime = await toggleMedicineSchedule(scheduleId);
       loadSchedules();
+      Toast.show({
+        type: "success",
+        text1: "Thành công",
+        text2: "Làm tốt lắm!",
+      });
     } catch (err) {
-      console.log("Đã xảy ra lỗi khi thay đổi trạng thái thuốc");
+      Toast.show({
+        type: "error",
+        text1: "Thất bại",
+        text2: "Chưa tới thời gian uống thuốc.",
+      });
     }
     setActionModalVisible(false);
   };
 
   const changeTakenTime = async (time: any) => {
     if (selectedMedicine) {
-      const result = await updateTakenTime(selectedMedicine?.id, time);
-      console.log("Cập nhật thành công:", result);
-      loadSchedules(); // Tải lại lịch trình sau khi cập nhật
+      try {
+        const result = await updateTakenTime(selectedMedicine?.id, time);
+        console.log("Cập nhật thành công:", result);
+        loadSchedules(); // Tải lại lịch trình sau khi cập nhật
+      } catch (error) {
+        Toast.show({
+          type: "error",
+          text1: "Thất bại",
+          text2: "Có lỗi xảy ra khi cập nhật thời gian uống thuốc.",
+        });
+      }
     }
     setActionModalVisible(false);
   };

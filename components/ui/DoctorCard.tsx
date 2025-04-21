@@ -3,6 +3,7 @@ import { View, Text, Image, TouchableOpacity } from "react-native";
 import { FC, useState } from "react";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import Modal from "react-native-modal";
+import Toast from "react-native-toast-message";
 
 import {
   storeFavoriteDoctors,
@@ -18,8 +19,8 @@ interface DoctorCardProps {
   name: string;
   specialty: string;
   hospital: string;
-  rating: number;
-  reviews: number;
+  rating?: number;
+  reviews?: number;
   image: any;
   onPress?: () => void;
 }
@@ -59,15 +60,28 @@ const DoctorCard: FC<DoctorCardProps> = ({
       if (patientId) {
         const success = await addToLoveList(patientId, doctorId);
         if (success) {
-          console.log("Thêm bác sĩ vào danh sách yêu thích thành công!");
+          Toast.show({
+            type: "success",
+            text1: "Thành công!",
+            text2: `${selectedDoctor} đã được thêm vào danh sách yêu thích!`,
+          });
         } else {
-          console.log("Thêm bác sĩ thất bại!");
+          Toast.show({
+            type: "error",
+            text1: "Thất bại!",
+            text2: `Có lỗi xảy ra, hãy thử lại sau!`,
+          });
         }
       } else {
-        console.log("Không tìm thấy ID bệnh nhân");
+        Toast.show({
+          type: "error",
+          text1: "Thất bại!",
+          text2: `Có lỗi xảy ra, hãy thử lại sau!`,
+        });
       }
     }
   };
+
   const confirmCancel = async () => {
     setFavorite(false);
     setModalVisible(false);
@@ -77,7 +91,11 @@ const DoctorCard: FC<DoctorCardProps> = ({
     if (patientId) {
       const success = await removeFromLoveList(patientId, doctorId);
       if (success) {
-        console.log("Xóa bác sĩ khỏi danh sách yêu thích thành công!");
+        Toast.show({
+          type: "success",
+          text1: "Thành công!",
+          text2: `Đã xóa ${selectedDoctor} khỏi danh sách yêu thích!`,
+        });
       } else {
         console.log("Xóa bác sĩ thất bại!");
       }
@@ -124,19 +142,18 @@ const DoctorCard: FC<DoctorCardProps> = ({
         </View>
 
         {/* Đánh giá */}
-        <View className="flex-row items-center mt-2">
-          <FontAwesome name="star" size={16} color="#FACC15" />
-          <Text className="text-sm font-semibold text-gray-800 ml-1">
-            {typeof rating === "string"
-              ? parseFloat(rating).toFixed(1)
-              : typeof rating === "number"
-              ? rating.toFixed(1)
-              : rating}
-          </Text>
-          <Text className="text-sm text-gray-500 ml-1">
-            | {reviews.toLocaleString()} đánh giá
-          </Text>
-        </View>
+        {(typeof rating === "number" || typeof rating === "string") &&
+          (typeof reviews === "number" || typeof reviews === "string") && (
+            <View className="flex-row items-center mt-2">
+              <FontAwesome name="star" size={16} color="#FACC15" />
+              <Text className="text-sm font-semibold text-gray-800 ml-1">
+                {Number(rating).toFixed(1)}
+              </Text>
+              <Text className="text-sm text-gray-500 ml-1">
+                | {Number(reviews).toLocaleString()} đánh giá
+              </Text>
+            </View>
+          )}
       </View>
       {/* Modal Xác Nhận Hủy */}
       <Modal

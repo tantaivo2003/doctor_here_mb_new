@@ -17,7 +17,6 @@ import TextInputField from "../../components/ui/TextInputField";
 import DatePickerField from "../../components/ui/DatePickerField";
 
 import dayjs from "dayjs";
-import { set } from "date-fns";
 
 export default function HealthInsurance({ navigation }: any) {
   const [insuranceInfo, setInsuranceInfo] = useState<InsuranceInfo | null>(

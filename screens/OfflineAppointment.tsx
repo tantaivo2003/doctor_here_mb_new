@@ -11,6 +11,7 @@ import {
   FlatList,
   TextInput,
   Image,
+  Modal,
 } from "react-native";
 import dayjs from "dayjs";
 import "dayjs/locale/vi"; // Import locale tiếng Việt
@@ -20,6 +21,7 @@ import { GioHen } from "../types/types";
 import { pickImageFromLibrary } from "../utils/imagePicker";
 
 import NotificationModal from "../components/ui/NotificationModal";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OfflineAppointment({ navigation, route }: any) {
   const { doctor } = route.params;
@@ -27,6 +29,8 @@ export default function OfflineAppointment({ navigation, route }: any) {
   const [selectedTime, setSelectedTime] = useState<GioHen>();
   const [reason, setReason] = useState(""); // Lý do khám / triệu chứng
   const [images, setImages] = useState<string[]>([]); // Danh sách ảnh đã chọn
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [notificationType, setNotificationType] = useState("");
@@ -54,20 +58,42 @@ export default function OfflineAppointment({ navigation, route }: any) {
     }
     navigation.navigate("ConfirmAppointment", {
       doctor: doctor,
-      date: selectedDate ? dayjs(selectedDate).format("DD/MM/YYYY") : null,
+      date: selectedDate,
       time: selectedTime,
       reason: reason,
       images: images,
     });
   };
+
+  // Xử lý nhấn vào hình ảnh
+  const handleImagePress = (imageUrl: string) => {
+    setSelectedImage(imageUrl); // Lưu URI của hình ảnh được chọn
+    setIsModalVisible(true); // Hiển thị modal để phóng to hình ảnh
+  };
   return (
-    <ScrollView
-      className="flex-1 bg-white p-4"
-      showsVerticalScrollIndicator={false}
-    >
-      <View className="flex-row my-5 items-center justify-between">
+    <ScrollView className="flex-1 bg-white p-4">
+      <View className="flex-row my-2 items-center justify-between">
         <Text className="text-xl font-bold text-gray-800">
-          Thông tin bổ sung
+          Lý do khám / triệu chứng
+        </Text>
+      </View>
+      <TextInput
+        className="border p-4 rounded-xl mb-4"
+        placeholder="Lý do khám / triệu chứng"
+        value={reason}
+        onChangeText={setReason}
+      />
+
+      <CalendarUI
+        doctorId={doctor.id}
+        isOnlineMethod={false}
+        onSelectDateTime={handleSelectDateTime}
+        handleContinue={handleContinue}
+      />
+
+      <View className="flex-row my-2 items-center justify-between">
+        <Text className="text-xl font-bold text-gray-800">
+          Hình ảnh bổ sung
         </Text>
         <TouchableOpacity
           onPress={pickImage}
@@ -79,26 +105,25 @@ export default function OfflineAppointment({ navigation, route }: any) {
           </Text>
         </TouchableOpacity>
       </View>
-      <TextInput
-        className="border p-4 rounded-xl mb-4"
-        placeholder="Lý do khám / triệu chứng"
-        value={reason}
-        onChangeText={setReason}
-      />
-
-      {images.length > 0 && (
+      {images.length === 0 ? (
+        <Text className="text-center items-center mt-5">
+          Bạn có thể bổ sung hình ảnh ở đây
+        </Text>
+      ) : (
         <View className="flex-row flex-wrap gap-3 ml-2 mb-4 ">
           {images.map((uri, index) => (
             <View
               key={index}
               className="w-[31%] relative rounded-xl overflow-hidden border border-gray-200"
             >
-              <Image
-                source={{ uri }}
-                key={index}
-                className="w-full h-64"
-                resizeMode="cover"
-              />
+              <TouchableOpacity onPress={() => handleImagePress(uri)}>
+                <Image
+                  source={{ uri }}
+                  key={index}
+                  className="w-full h-64"
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
               <TouchableOpacity
                 className="absolute top-1 right-1 bg-black/60 rounded-full p-1"
                 onPress={() => {
@@ -114,10 +139,8 @@ export default function OfflineAppointment({ navigation, route }: any) {
         </View>
       )}
 
-      <CalendarUI onSelectDateTime={handleSelectDateTime} />
-
       <TouchableOpacity
-        className="flex-1 bg-blue-500 py-3 rounded-full items-center mr-2 mt-5 mb-10"
+        className="w-full bg-blue-500 py-3 rounded-full items-center mr-2 mt-5 mb-10"
         onPress={() => handleContinue()}
       >
         <Text className="text-white font-semibold">Tiếp tục</Text>
@@ -129,6 +152,31 @@ export default function OfflineAppointment({ navigation, route }: any) {
         message={notificationMessage}
         onClose={() => setNotificationVisible(false)}
       />
+
+      <Modal
+        visible={isModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View className="flex justify-center items-center bg-black bg-opacity-70 h-full w-full">
+          {selectedImage && (
+            <View className="w-full h-full justify-center items-center">
+              <Image
+                source={{ uri: selectedImage }}
+                style={{ width: "100%", height: "80%", resizeMode: "contain" }}
+              />
+
+              <TouchableOpacity
+                onPress={() => setIsModalVisible(false)}
+                className="absolute top-0 right-4 z-50"
+              >
+                <Ionicons name="close-circle" size={36} color="white" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
