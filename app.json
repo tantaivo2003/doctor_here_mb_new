@@ -90,8 +90,7 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
-      "package": "com.tantaivo2003.DoctorHere",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.tantaivo2003.DoctorHere"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -106,13 +105,12 @@
             "extraProguardRules": "-dontwarn org.webrtc.** -keep class org.webrtc.** { *; } -keep class com.stringee.** { *; }"
           }
         }
-      ],      [
+      ],
+      [
         "expo-android-app-gradle-dependencies",
         {
           "spacing": "    ",
-          "dependencies": [
-            "com.android.volley:volley:*.*.*"
-          ]
+          "dependencies": ["com.android.volley:volley:*.*.*"]
         }
       ]
     ],
