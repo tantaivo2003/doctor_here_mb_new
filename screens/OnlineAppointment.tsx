@@ -62,6 +62,12 @@ export default function OnlineAppointment({ navigation, route }: any) {
       setNotificationVisible(true);
       return;
     }
+    if (!selectedDate) {
+      setNotificationType("error");
+      setNotificationMessage("Vui lòng chọn ngày khám.");
+      setNotificationVisible(true);
+      return;
+    }
     navigation.navigate("ConfirmAppointment", {
       doctor: doctor,
       date: selectedDate,

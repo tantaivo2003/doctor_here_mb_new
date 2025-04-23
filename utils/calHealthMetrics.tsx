@@ -1,9 +1,8 @@
-export const calculateBMI = (heightCm: number, weightKg: number) => {
-  if (heightCm <= 0 || weightKg <= 0) {
+export const calculateBMI = (heightM: number, weightKg: number) => {
+  if (heightM <= 0 || weightKg <= 0) {
     return 0;
   }
 
-  const heightM = heightCm / 100;
   const bmi = parseFloat((weightKg / (heightM * heightM)).toFixed(1));
   console.log("BMI = ", weightKg, heightM);
   return bmi;

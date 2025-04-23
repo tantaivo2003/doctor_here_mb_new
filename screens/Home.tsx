@@ -43,7 +43,7 @@ const systemShortcuts = [
     icon: "users",
     title: "Gia đình",
     color: "#C5AEDC",
-    linkingto: "MedicineSchedule",
+    linkingto: "FamilyStack",
   },
 ];
 

@@ -1,3 +1,4 @@
+import { View, Text } from "react-native";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import UpcomingAppointments from "./UpcomingAppointments";
 import CompletedAppointments from "./CompletedAppointments";

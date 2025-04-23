@@ -13,6 +13,7 @@ import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 
 import Home from "./screens/Home";
 import ChatStack from "./screens/chat/ChatStack";
+import FamilyStack from "./screens/family/FamilyStack";
 import HealthMetricsScreen from "./screens/HealthMetrics/HealthMetricsScreen";
 import DiagnosisList from "./screens/diagnosisResult/DiagnosisList";
 import DiagnosisDetails from "./screens/diagnosisResult/DiagnosisDetail";
@@ -110,6 +111,15 @@ const HomeStack = () => (
       options={{
         title: "Chỉ số sức khỏe",
         headerTitleAlign: "center",
+      }}
+    />
+    <Stack.Screen
+      name="FamilyStack"
+      component={FamilyStack}
+      options={{
+        title: "Thành viên gia đình",
+        headerTitleAlign: "center",
+        headerShown: false,
       }}
     />
   </Stack.Navigator>

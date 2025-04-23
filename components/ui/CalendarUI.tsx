@@ -197,7 +197,7 @@ const CalendarUI: React.FC<CalendarUIProps> = ({
       </Text>
       <View className="w-full items-center">
         {getTimeSlotsForSelectedDate().length === 0 ? (
-          <Text className="text-gray-500 text-lg mt-4">
+          <Text className="text-gray-500 text-lg">
             Không có khung giờ khả dụng.
           </Text>
         ) : (

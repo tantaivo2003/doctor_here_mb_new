@@ -132,7 +132,7 @@ export default function AppointmentDetails({ navigation, route }: any) {
       </Text>
       <View className="bg-white rounded-2xl shadow-md p-4 mt-3 mb-3 border border-gray-200">
         {/* Lý do khám*/}
-        <View className="flex-row justify-between mb-4">
+        <View className="mb-4">
           <Text className="text-gray-500">Lý do khám</Text>
           <Text className="font-bold text-gray-900">
             {appointmentDetail.additionalText}

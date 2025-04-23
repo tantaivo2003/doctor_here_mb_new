@@ -177,7 +177,7 @@ const DoctorCard: FC<DoctorCardProps> = ({
                 <Text>Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className="py-3 px-6 bg-gray-900 w-2/5 items-center rounded-full"
+                className="py-3 px-6 bg-blue-500 w-2/5 items-center rounded-full"
                 onPress={confirmCancel}
               >
                 <Text className="text-white">Xác nhận</Text>
