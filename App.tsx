@@ -13,12 +13,13 @@ import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 
 import Home from "./screens/Home";
 import ChatStack from "./screens/chat/ChatStack";
+import FamilyStack from "./screens/family/FamilyStack";
 import HealthMetricsScreen from "./screens/HealthMetrics/HealthMetricsScreen";
 import DiagnosisList from "./screens/diagnosisResult/DiagnosisList";
 import DiagnosisDetails from "./screens/diagnosisResult/DiagnosisDetail";
 import AppointmentScreen from "./screens/appointment/AppointmentScreen";
 import AppointmentDetails from "./screens/appointment/AppointmentDetails";
-import FindDoctor from "./screens/FindDoctor";
+import FindDoctor from "./screens/doctor/FindDoctor";
 import FavoriteDoctor from "./screens/FavoriteDoctor";
 import OfflineAppointment from "./screens/OfflineAppointment";
 import OnlineAppointment from "./screens/OnlineAppointment";
@@ -33,7 +34,7 @@ import {
   AppointmentIcon,
   ProfileIcon,
 } from "./components/icons/TabNavIcons";
-import DoctorDetail from "./screens/DoctorDetail";
+import DoctorDetail from "./screens/doctor/DoctorDetail";
 import { getUserID } from "./services/storage";
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -110,6 +111,15 @@ const HomeStack = () => (
       options={{
         title: "Chỉ số sức khỏe",
         headerTitleAlign: "center",
+      }}
+    />
+    <Stack.Screen
+      name="FamilyStack"
+      component={FamilyStack}
+      options={{
+        title: "Thành viên gia đình",
+        headerTitleAlign: "center",
+        headerShown: false,
       }}
     />
   </Stack.Navigator>

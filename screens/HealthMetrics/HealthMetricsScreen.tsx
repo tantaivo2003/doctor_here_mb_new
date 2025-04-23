@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import BMIScreen from "./BMIScreen";
 import BloodPressureScreen from "./BloodPressureScreen";
@@ -6,9 +6,17 @@ import HeartRateScreen from "./HeartRateScreen";
 import ActivityScreen from "./ActivityScreen";
 import { Ionicons } from "@expo/vector-icons";
 
+import { initializeHealthConnect } from "../../services/healthConnect/healthConnect";
+import {
+  requestMyAppPermissions,
+  checkAndRequestPermissions,
+} from "../../services/healthConnect/healthConnectPermissions";
+
+import { permissionsToRequest } from "../../services/healthConnect/permissions";
+
 const Tab = createMaterialTopTabNavigator();
 
-const HealthMetricsScreen = () => {
+const HealthMetricsScreen = ({ navigation }: any) => {
   return (
     <Tab.Navigator
       screenOptions={{

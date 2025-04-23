@@ -82,7 +82,7 @@ export default function ProfileScreen({ navigation }: any) {
             <MenuItem
               icon="help-circle"
               title="Hỗ trợ"
-              onPress={() => navigation.navigate("Support")}
+              onPress={() => navigation.navigate("NotificationTest")}
             />
             <MenuItem
               icon="document-text"

@@ -49,15 +49,18 @@ export const getAppointment = async (
 /* Lấy detail của một appointment cụ thể */
 export const fetchAppointmentDetail = async (
   id: number
-): Promise<AppointmentDetail> => {
+): Promise<AppointmentDetail | null> => {
   try {
     const response = await fetch(
-      `https://doctor-here-hya8gmh7drg9bdbf.southeastasia-01.azurewebsites.net/appointments/detail/${id}`
+      `${API_BASE_URL}/api/appointment/detail/${id}`,
+      {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      }
     );
 
     if (!response.ok) {
-      console.log("Không có dữ liệu");
-      return mockAppointmentDetail;
+      return null;
     }
 
     const data = await response.json();
@@ -102,10 +105,18 @@ export const fetchAppointmentDetail = async (
       images: data.Hinh_anh_bo_sung_cuoc_hen.map(
         (img: { url: string }) => img.url
       ),
+
+      rating: data.Danh_gia
+        ? {
+            diem_danh_gia: data.Danh_gia.diem_danh_gia,
+            noi_dung: data.Danh_gia.noi_dung,
+            thoi_diem: data.Danh_gia.thoi_diem,
+          }
+        : undefined,
     };
   } catch (error) {
     console.error("Error fetching appointment detail:", error);
-    return mockAppointmentDetail;
+    return null;
   }
 };
 export const fetchDoctorCalendar = async (

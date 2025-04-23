@@ -35,7 +35,7 @@ export default function SelectField({
         onSelect={(item) => onChange(item.title)}
         defaultValue={selected}
         renderButton={(selectedItem, isOpened) => (
-          <View className="flex-row items-center border border-gray-300 px-3 py-6 rounded-lg mb-6">
+          <View className="flex-row items-center border border-gray-300 px-4 py-3 rounded-lg mb-6">
             {selectedItem?.icon ? (
               <MaterialCommunityIcons
                 name={selectedItem.icon}

@@ -1,15 +1,25 @@
-import { View, Text, ScrollView, Image } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  Modal,
+} from "react-native";
 import { useState, useEffect } from "react";
 import LoadingModal from "../../components/ui/LoadingModal";
 import { fetchDiagnosisDetail } from "../../api/Diagnosis";
 import { DiagnosisDetail } from "../../types/types";
 import { formatDateTime } from "../../utils/formatDateTime";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 
 export default function DiagnosisDetails({ route }: any) {
   const { diagnosis } = route.params;
   const [detail, setDetail] = useState<DiagnosisDetail | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isZoomModalVisible, setIsZoomModalVisible] = useState(false);
 
   useEffect(() => {
     const loadDetail = async () => {
@@ -28,6 +38,12 @@ export default function DiagnosisDetails({ route }: any) {
     loadDetail();
   }, [diagnosis.id]);
 
+  // Xử lý nhấn vào hình ảnh
+  const handleImagePress = (imageUrl: string) => {
+    setSelectedImage(imageUrl); // Lưu URI của hình ảnh được chọn
+    setIsZoomModalVisible(true); // Hiển thị modal để phóng to hình ảnh
+  };
+
   if (loading || !detail) {
     return <LoadingModal />;
   }
@@ -35,7 +51,6 @@ export default function DiagnosisDetails({ route }: any) {
   return (
     <ScrollView className="flex-1 bg-white p-4">
       {/* Thông tin bác sĩ */}
-
       <View className="flex-row items-center bg-white rounded-lg shadow-md">
         <View className="w-28 h-28 rounded-xl overflow-hidden flex items-center justify-center">
           <Image
@@ -60,10 +75,10 @@ export default function DiagnosisDetails({ route }: any) {
         </View>
       </View>
       {/* Diagnosis info */}
-      <View className="bg-white rounded-2xl shadow-md p-4 mt-3 border border-gray-200">
-        <Text className="font-semibold text-lg text-gray-800 mb-2">
-          Thông tin khám bệnh
-        </Text>
+      <Text className="font-semibold text-lg text-gray-800 my-3">
+        Thông tin khám bệnh
+      </Text>
+      <View className="bg-white rounded-2xl shadow-md p-4 border border-gray-200">
         <View className="border-b border-gray-200 pb-2 mb-2">
           <View className="flex-row justify-between">
             <Text className="text-gray-600">Ngày khám:</Text>
@@ -87,7 +102,9 @@ export default function DiagnosisDetails({ route }: any) {
 
         {detail.additionalNote && (
           <View className="border-b border-gray-200 pb-2 mb-2">
-            <Text className="text-gray-600 mb-1">Ghi chú của bác sĩ:</Text>
+            <Text className="text-gray-800 font-semibold mb-1">
+              Ghi chú của bác sĩ:
+            </Text>
             <Text className="text-gray-800 italic">
               {detail.additionalNote}
             </Text>
@@ -129,36 +146,58 @@ export default function DiagnosisDetails({ route }: any) {
           </View>
         )}
 
-        {/* Thông tin thanh toán (dựa trên ảnh bạn cung cấp) */}
-        <View className="mt-4 border-t border-gray-200 pt-2">
-          <Text className="font-semibold text-md text-gray-800 mb-2">
-            Chi tiết thanh toán
-          </Text>
-          <View className="flex-row justify-between">
-            <Text className="text-gray-600">Phí khám:</Text>
-            <Text className="text-gray-800">
-              {detail.appointmentId ? "100.000 VND" : "N/A"}
+        {/* Hình ảnh bổ sung */}
+        {detail.images.length > 0 && (
+          <>
+            <Text className="text-xl font-bold text-gray-800 my-3">
+              Hình ảnh bổ sung
             </Text>
-            {/* Dùng appointmentId để giả định có phí khám */}
-          </View>
-          <View className="flex-row justify-between mt-1">
-            <Text className="text-gray-600">Phí tiện ích:</Text>
-            <Text className="text-gray-800">0 VND</Text>
-          </View>
-          <View className="flex-row justify-between mt-2 border-t border-gray-200 pt-2">
-            <Text className="font-semibold text-gray-800">
-              Tổng thanh toán:
-            </Text>
-            <Text className="font-semibold text-gray-800">
-              {detail.appointmentId ? "100.000 VND" : "N/A"}
-            </Text>
-          </View>
-          <View className="mt-3">
-            <Text className="text-gray-600">Phương thức thanh toán:</Text>
-            <Text className="text-gray-800 font-semibold">Trả tiền mặt</Text>
-          </View>
-        </View>
+
+            <View className="flex-row flex-wrap gap-3 ml-2 mb-4 ">
+              {detail.images.map((uri: any, index: any) => (
+                <View
+                  key={index}
+                  className="w-[31%] relative rounded-xl overflow-hidden border border-gray-200"
+                >
+                  <TouchableOpacity onPress={() => handleImagePress(uri)}>
+                    <Image
+                      source={{ uri }}
+                      key={index}
+                      className="w-full h-64"
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
       </View>
+
+      <Modal
+        visible={isZoomModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsZoomModalVisible(false)}
+      >
+        <View className="flex justify-center items-center bg-black bg-opacity-70 h-full w-full">
+          {selectedImage && (
+            <View className="w-full h-full justify-center items-center">
+              <Image
+                source={{ uri: selectedImage }}
+                style={{ width: "100%", height: "80%", resizeMode: "contain" }}
+              />
+
+              <TouchableOpacity
+                onPress={() => setIsZoomModalVisible(false)}
+                className="absolute top-0 right-4 z-50"
+              >
+                <Ionicons name="close-circle" size={36} color="white" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </Modal>
     </ScrollView>
   );
 }

@@ -4,6 +4,7 @@ import ProfileScreen from "./ProfileScreen";
 import PersonalInfoScreen from "./PersonalInfo";
 import HealthInsurance from "./HealthInsurance";
 import SettingsScreen from "./Settings";
+import NotificationTestScreen from "../notification/NotificationTestScreen";
 const Stack = createStackNavigator();
 
 const UserProfileStack = () => {
@@ -25,6 +26,11 @@ const UserProfileStack = () => {
         options={{ title: "Thông tin y tế" }}
       />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen
+        name="NotificationTest"
+        component={NotificationTestScreen}
+        options={{ title: "Thông báo" }}
+      />
       {/*
       <Stack.Screen name="TopUpPoints" component={TopUpPoints} />
    

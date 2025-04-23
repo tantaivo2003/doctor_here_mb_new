@@ -10,6 +10,8 @@ import { formatDateTime } from "../../utils/formatDateTime";
 import LoadingModal from "../../components/ui/LoadingModal";
 import NotificationModal from "../../components/ui/NotificationModal";
 import { cancelAppointment } from "../../api/Appointment";
+import Toast from "react-native-toast-message";
+import { MaterialIcons } from "@expo/vector-icons";
 export default function UpcomingAppointments({ navigation }: any) {
   const [modalVisible, setModalVisible] = useState(false);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -73,7 +75,11 @@ export default function UpcomingAppointments({ navigation }: any) {
       fetchAppointments(); // Cập nhật danh sách lịch hẹn sau khi hủy
       setModalVisible(false);
     } catch (error) {
-      alert("Hủy lịch hẹn thất bại. Vui lòng thử lại sau.");
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Có lỗi xảy ra khi hủy lịch hẹn",
+      });
     }
   };
 
@@ -95,17 +101,7 @@ export default function UpcomingAppointments({ navigation }: any) {
             className="bg-white rounded-lg shadow-md p-4 mb-4 mx-4 mt-4"
             onPress={() =>
               navigation.navigate("AppointmentDetails", {
-                doctor: {
-                  id: item.id,
-                  name: item.doctor,
-                  specialty: item.specialty,
-                  hospital: item.hospital,
-                  rating: 4.5,
-                  reviews: 120,
-                  image: item.image,
-                },
-                date: item.date,
-                startTime: item.startTime,
+                appointment: item,
               })
             }
           >
@@ -130,7 +126,10 @@ export default function UpcomingAppointments({ navigation }: any) {
               <View className="ml-4">
                 <Text className="font-bold text-lg">{item.doctor}</Text>
                 <Text className="text-gray-500">{item.specialty}</Text>
-                <Text className="text-gray-400">{item.hospital}</Text>
+                <View className="flex-row items-center mt-1">
+                  <MaterialIcons name="location-on" size={16} color="#6B7280" />
+                  <Text className="text-gray-400">{item.hospital}</Text>
+                </View>
               </View>
             </View>
             {/* Nút hủy*/}

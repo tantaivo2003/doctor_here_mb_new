@@ -70,6 +70,12 @@ export interface Appointment {
   ratingTime?: string;
 }
 
+export interface AppointmentRating {
+  diem_danh_gia: number;
+  noi_dung: string;
+  thoi_diem: string;
+}
+
 export interface AppointmentDetail {
   id: number;
   additionalText: string; // Văn bản bổ sung
@@ -107,6 +113,8 @@ export interface AppointmentDetail {
   isOnline: boolean;
 
   images: any;
+
+  rating?: AppointmentRating;
 }
 
 export const mockAppointmentDetail: AppointmentDetail = {
@@ -373,7 +381,7 @@ export interface GioHen {
 export interface LichNgay {
   thu: string;
   ngay_lam_viec: string;
-  gio_hen: GioHen[];
+  Gio_hen: GioHen[];
 }
 
 export interface Patient {
@@ -439,7 +447,7 @@ export interface DiagnosisDetail {
   doctorFullName: string;
   doctorAvatarUrl: string;
   doctorSpecialty: string;
-  images: string[]; // nếu là mảng URL, bạn có thể thay thành { url: string }[] nếu cần thêm thông tin
+  images: string[];
   prescriptionId: number | null;
   prescriptionStartDate: string | null;
   prescriptionEndDate: string | null;
@@ -450,4 +458,111 @@ export interface DiagnosisDetail {
     unit: string;
     quantity: number;
   }[];
+}
+
+// types/familyTypes.ts
+
+export interface FamilyMember {
+  ma_bn: string;
+  ten_dang_nhap: string;
+  email: string;
+  sdt: string;
+  ngay_sinh: string;
+  gioi_tinh: string;
+  phan_loai: string;
+  ho_va_ten: string;
+  avt_url: string;
+  than_phan: string;
+}
+
+export const familyMembers: FamilyMember[] = [
+  {
+    ma_bn: "BN0000006",
+    ten_dang_nhap: "voanh123",
+    email: "voanh@gmail.com",
+    sdt: "0909123456",
+    ngay_sinh: "1990-05-15",
+    gioi_tinh: "Nữ",
+    phan_loai: "Người thân",
+    ho_va_ten: "Võ Ánh",
+    avt_url: "https://randomuser.me/api/portraits/women/1.jpg",
+    than_phan: "Vợ",
+  },
+  {
+    ma_bn: "BN0000007",
+    ten_dang_nhap: "conga123",
+    email: "conga@gmail.com",
+    sdt: "0909123457",
+    ngay_sinh: "2010-08-21",
+    gioi_tinh: "Nam",
+    phan_loai: "Người thân",
+    ho_va_ten: "Công A",
+    avt_url: "https://randomuser.me/api/portraits/men/2.jpg",
+    than_phan: "Con trai",
+  },
+  {
+    ma_bn: "BN0000008",
+    ten_dang_nhap: "meanh123",
+    email: "meanh@gmail.com",
+    sdt: "0909123458",
+    ngay_sinh: "1965-03-01",
+    gioi_tinh: "Nữ",
+    phan_loai: "Người thân",
+    ho_va_ten: "Nguyễn Thị B",
+    avt_url: "",
+    than_phan: "Mẹ",
+  },
+];
+
+export interface PendingInvite {
+  than_phan: string;
+  ma_benh_nhan_1: string;
+  ho_va_ten: string;
+  sdt: string;
+  avt_url: string; // Link ảnh đại diện (Có thể null)
+}
+export const mockPendingInvites: PendingInvite[] = [
+  {
+    than_phan: "Con",
+    ma_benh_nhan_1: "BN001",
+    ho_va_ten: "Nguyễn Văn A",
+    sdt: "0901234567",
+    avt_url: "https://randomuser.me/api/portraits/men/1.jpg",
+  },
+  {
+    than_phan: "Vợ",
+    ma_benh_nhan_1: "BN002",
+    ho_va_ten: "Trần Thị B",
+    sdt: "0912345678",
+    avt_url: "https://randomuser.me/api/portraits/women/2.jpg",
+  },
+  {
+    than_phan: "Chồng",
+    ma_benh_nhan_1: "BN003",
+    ho_va_ten: "Lê Văn C",
+    sdt: "0987654321",
+    avt_url: "https://randomuser.me/api/portraits/men/4.jpg",
+  },
+  {
+    than_phan: "Anh trai",
+    ma_benh_nhan_1: "BN004",
+    ho_va_ten: "Phạm Văn D",
+    sdt: "0922334455",
+    avt_url: "https://randomuser.me/api/portraits/men/4.jpg",
+  },
+];
+
+export interface HealthRecord {
+  date: string;
+  value: number;
+}
+
+export interface HeightRecord {
+  date: string; // Ngày ghi nhận
+  heightInMeters: number; // Chiều cao (cm)
+}
+
+export interface WeightRecord {
+  date: string; // Ngày ghi nhận
+  weightInKilograms: number; // Cân nặng (kg)
 }

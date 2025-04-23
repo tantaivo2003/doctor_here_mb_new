@@ -1,12 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+  FlatList,
+  SafeAreaView,
+} from "react-native";
 import { FontAwesome, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
-import DoctorCard from "../components/ui/DoctorCard";
-import { getDoctorRatings } from "../api/Rating";
-import { Rating } from "../types/types";
+import DoctorCard from "../../components/ui/DoctorCard";
+import { getDoctorRatings } from "../../api/Rating";
+import { Rating } from "../../types/types";
 import { StarRatingDisplay } from "react-native-star-rating-widget";
+import DoctorRating from "./DoctorRating";
 
-import LoadingAnimation from "../components/ui/LoadingAnimation";
+import LoadingAnimation from "../../components/ui/LoadingAnimation";
 export default function DoctorDetail({ navigation, route }: any) {
   const { doctor } = route.params;
   const [ratings, setRatings] = useState<Rating[]>([]);
@@ -21,7 +30,7 @@ export default function DoctorDetail({ navigation, route }: any) {
     };
 
     fetchRatings();
-  }, []);
+  }, [doctor.id]);
 
   return (
     <View className="flex-1 bg-white">
@@ -75,71 +84,8 @@ export default function DoctorDetail({ navigation, route }: any) {
         <Text className="text-xl font-bold text-gray-800 my-5">Về bác sĩ</Text>
         <Text className="text-gray-600">{doctor.description}</Text>
 
-        <Text className="text-xl font-bold text-gray-800 my-5">
-          Giờ làm việc
-        </Text>
-        <Text className="text-gray-600">Thứ 2 đến thứ 6, từ 8:00 - 17:00</Text>
-
         {/* Nhận xét của người dùng */}
-        {isLoading ? (
-          <LoadingAnimation />
-        ) : (
-          <View>
-            <View className="flex flex-row justify-between items-center mt-10 mb-5">
-              <Text className="text-xl font-bold text-gray-800">
-                Nhận xét của người dùng
-              </Text>
-              <TouchableOpacity>
-                <Text className="text-blue-500">Xem tất cả</Text>
-              </TouchableOpacity>
-            </View>
-            {ratings.length > 0 ? (
-              ratings.map((rating, index) => (
-                <View key={index}>
-                  <View className="flex-row items-center">
-                    <Image
-                      source={
-                        rating.patient.avatar
-                          ? { uri: rating.patient.avatar }
-                          : require("../assets/avatar-placeholder.png")
-                      }
-                      className="w-16 h-16 rounded-full"
-                    />
-                    <View className="ml-4">
-                      <Text className="text-lg font-bold text-gray-900">
-                        {rating.patient.name}
-                      </Text>
-                      <View className="flex-row items-center mt-1">
-                        <Text className="text-sm font-semibold text-gray-700">
-                          {rating.score.toFixed(1)}
-                        </Text>
-                        <StarRatingDisplay
-                          rating={rating.score}
-                          starSize={24}
-                          starStyle={{ marginHorizontal: 1 }}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                  <Text className="text-gray-600 ml-20 mb-5">
-                    {rating.content}
-                  </Text>
-                </View>
-              ))
-            ) : (
-              <View className="flex items-center justify-center p-4">
-                <MaterialIcons
-                  name="chat-bubble-outline"
-                  size={40}
-                  color="gray"
-                />
-                <Text className="text-gray-500 text-center mt-2">
-                  Chưa có nhận xét nào.
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
+        {isLoading ? <LoadingAnimation /> : <DoctorRating ratings={ratings} />}
       </ScrollView>
 
       {/* Thanh nút cố định */}

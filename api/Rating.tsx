@@ -18,7 +18,7 @@ export const getDoctorRatings = async (doctorId: string): Promise<Rating[]> => {
 
     const data = await response.json();
 
-    return data.map((item: any) => ({
+    return data.ratings.map((item: any) => ({
       id: item.id,
       score: item.diem_danh_gia,
       content: item.noi_dung,

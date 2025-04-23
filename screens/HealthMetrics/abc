@@ -1,0 +1,31 @@
+
+              <TouchableOpacity
+                key={metric.key}
+                className="flex-1 bg-gray-100 p-4 rounded-lg mx-1 flex-row items-center"
+                onPress={() => {
+                  setSelectedMetric(metric.key);
+                  setValue("");
+                  setModalVisible(true);
+                }}
+              >
+                {/* Hình ảnh */}
+                <Image
+                  source={
+                    metric.key === "height_records"
+                      ? require("../../assets/healthMetrics/height.png")
+                      : require("../../assets/healthMetrics/weight.png")
+                  }
+                  className="w-16 h-16 mr-4"
+                  resizeMode="contain"
+                />
+
+                {/* Phần thông tin */}
+                <View className="flex-1">
+                  <Text className="text-gray-600">{metric.label}</Text>
+                  <Text className="text-lg font-bold">
+                    {healthData[metric.key]
+                      ? `${healthData[metric.key]} ${metric.unit}`
+                      : "Chưa có dữ liệu"}
+                  </Text>
+                </View>
+              </TouchableOpacity>

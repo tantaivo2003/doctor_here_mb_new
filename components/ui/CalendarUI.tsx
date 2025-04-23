@@ -1,44 +1,58 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  FlatList,
+} from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
 
 import { fetchDoctorCalendar } from "../../api/Appointment";
 import LoadingAnimation from "./LoadingAnimation";
 import { set } from "date-fns";
 import { LichNgay, GioHen } from "../../types/types";
+import { formatDateTime } from "../../utils/formatDateTime";
 
 interface CalendarUIProps {
+  doctorId: string;
+  isOnlineMethod: boolean;
   onSelectDateTime?: (date: string, time: GioHen) => void;
+  handleContinue: () => void;
 }
 
-const CalendarUI: React.FC<CalendarUIProps> = ({ onSelectDateTime }) => {
+const CalendarUI: React.FC<CalendarUIProps> = ({
+  doctorId,
+  isOnlineMethod,
+  onSelectDateTime,
+  handleContinue,
+}) => {
   const [calendarData, setCalendarData] = useState<LichNgay[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<GioHen>();
   const [currentMonth, setCurrentMonth] = useState("03/2025");
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const loadCalendar = async (month: string) => {
     setIsLoading(true);
     const [monthStr, yearStr] = month.split("/");
-    const drID = "BS0000001";
     const startTime = `${yearStr}-${monthStr}-01T00:00:00`; // Tháng bắt đầu từ ngày 1
     const endTime = `${yearStr}-${monthStr}-31T23:59:59`;
-    const isOnlMethod = true;
 
     const data = await fetchDoctorCalendar(
-      drID,
+      doctorId,
       startTime,
       endTime,
-      isOnlMethod
+      isOnlineMethod
     );
+
     if (data) {
       setCalendarData(data);
       setSelectedDate(data[0]?.ngay_lam_viec || null);
-      setSelectedTime(data[0]?.gio_hen[0] || null);
+      setSelectedTime(data[0]?.Gio_hen[0] || null);
       if (onSelectDateTime) {
-        onSelectDateTime(data[0]?.ngay_lam_viec, data[0]?.gio_hen[0]);
+        onSelectDateTime(data[0]?.ngay_lam_viec, data[0]?.Gio_hen[0]);
       }
     }
     setIsLoading(false);
@@ -51,7 +65,7 @@ const CalendarUI: React.FC<CalendarUIProps> = ({ onSelectDateTime }) => {
   const handleDateSelect = (ngay: string) => {
     setSelectedDate(ngay);
     const selected = calendarData.find((item) => item.ngay_lam_viec === ngay);
-    const firstSlot = selected?.gio_hen[0];
+    const firstSlot = selected?.Gio_hen[0];
     setSelectedTime(firstSlot);
 
     if (onSelectDateTime && firstSlot) {
@@ -63,7 +77,7 @@ const CalendarUI: React.FC<CalendarUIProps> = ({ onSelectDateTime }) => {
     const selected = calendarData.find(
       (item) => item.ngay_lam_viec === selectedDate
     );
-    return selected?.gio_hen || [];
+    return selected?.Gio_hen || [];
   };
 
   const handleChangeMonth = (direction: "prev" | "next") => {
@@ -91,8 +105,25 @@ const CalendarUI: React.FC<CalendarUIProps> = ({ onSelectDateTime }) => {
   };
 
   if (isLoading) {
-    return <LoadingAnimation />;
+    return (
+      <View className="items-center justify-center py-10">
+        <LoadingAnimation />
+        <Text className="mt-4 text-gray-600 text-base">
+          Đang tải lịch khám...
+        </Text>
+      </View>
+    );
   }
+
+  // Hàm xử lý chia slot thành 3 hàng
+  const getTimeSlotRows = () => {
+    const slots = getTimeSlotsForSelectedDate();
+    const rows: GioHen[][] = [[], [], []];
+    slots.forEach((slot, index) => {
+      rows[index % 3].push(slot); // chia 3 hàng
+    });
+    return rows;
+  };
   return (
     <View className="bg-white rounded-lg flex justify-center">
       <Text className="text-xl font-bold text-gray-800 mb-3">
@@ -121,10 +152,10 @@ const CalendarUI: React.FC<CalendarUIProps> = ({ onSelectDateTime }) => {
             const date = dateObj.getDate();
 
             return (
-              <View key={item.ngay_lam_viec} className="items-center mr-2 mt-2">
+              <View key={item.ngay_lam_viec} className="items-center mr-1 mt-2">
                 <TouchableOpacity
                   onPress={() => handleDateSelect(item.ngay_lam_viec)}
-                  className={`rounded-full w-14 h-14 items-center justify-center ${
+                  className={`rounded-full w-16 h-16 items-center justify-center ${
                     selectedDate === item.ngay_lam_viec
                       ? "bg-blue-500"
                       : "bg-gray-100"
@@ -151,7 +182,7 @@ const CalendarUI: React.FC<CalendarUIProps> = ({ onSelectDateTime }) => {
                 </TouchableOpacity>
                 <View className="bg-green-500 rounded-md py-1 px-2">
                   <Text className="text-xs text-white">
-                    {item.gio_hen.length} slots
+                    {item.Gio_hen.length} slots
                   </Text>
                 </View>
               </View>
@@ -165,32 +196,48 @@ const CalendarUI: React.FC<CalendarUIProps> = ({ onSelectDateTime }) => {
         Chọn giờ khám
       </Text>
       <View className="w-full items-center">
-        {getTimeSlotsForSelectedDate().length > 0 && (
-          <View className="flex flex-wrap flex-row gap-4 items-center justify-center">
-            {getTimeSlotsForSelectedDate().map((slot) => (
-              <TouchableOpacity
-                key={slot.id}
-                className={`w-28 h-12 rounded-lg flex items-center justify-center ${
-                  selectedTime === slot ? "bg-blue-500" : "bg-gray-100"
-                }`}
-                onPress={() => {
-                  setSelectedTime(slot);
-                  if (selectedDate && onSelectDateTime) {
-                    onSelectDateTime(selectedDate, slot);
-                  }
-                }}
-              >
-                <Text
-                  className={`text-sm font-semibold ${
-                    selectedTime === slot ? "text-white" : "text-gray-700"
-                  }`}
-                >
-                  {slot.thoi_diem_bat_dau.split(" ")[0].substring(0, 5)} -{" "}
-                  {slot.thoi_diem_ket_thuc.split(" ")[0].substring(0, 5)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        {getTimeSlotsForSelectedDate().length === 0 ? (
+          <Text className="text-gray-500 text-lg">
+            Không có khung giờ khả dụng.
+          </Text>
+        ) : (
+          <>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View className="gap-2">
+                {getTimeSlotRows().map((row, rowIndex) => (
+                  <View key={rowIndex} className="flex-row my-1">
+                    {row.map((item) => (
+                      <TouchableOpacity
+                        key={item.id}
+                        className={`w-40 h-14 rounded-lg flex items-center justify-center mx-1 ${
+                          selectedTime?.id === item.id
+                            ? "bg-blue-500"
+                            : "bg-gray-100"
+                        }`}
+                        onPress={() => {
+                          setSelectedTime(item);
+                          if (selectedDate && onSelectDateTime) {
+                            onSelectDateTime(selectedDate, item);
+                          }
+                        }}
+                      >
+                        <Text
+                          className={`font-semibold ${
+                            selectedTime?.id === item.id
+                              ? "text-white"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {formatDateTime(item.thoi_diem_bat_dau, "time")} -{" "}
+                          {formatDateTime(item.thoi_diem_ket_thuc, "time")}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          </>
         )}
       </View>
     </View>
