@@ -14,6 +14,7 @@ import { MessageItem } from "../../components/chat/MessageItem";
 import socket, { sendMessage, onMessageReceived } from "../../socket"; // Hàm WebSocket được export từ socket.ts
 import { set } from "date-fns";
 import * as ImagePicker from "expo-image-picker"; // Thêm thư viện chọn ảnh
+import { InteractionManager } from "react-native";
 
 const ChatDetailScreen: FC = ({ route, navigation }: any) => {
   const flatListRef = useRef<FlatList>(null); // Tạo tham chiếu đến FlatList
@@ -23,6 +24,8 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const { convID, doctorAvtUrl, doctorID } = route.params;
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [initialScrollDone, setInitialScrollDone] = useState(false); // Biến để kiểm tra lần đầu cuộn xuống cuối danh sách
   let userID = "BN0000006"; // ID người bệnh (lấy từ context hoặc dữ liệu người dùng đã đăng nhập)
   console.log(doctorID);
 
@@ -46,6 +49,10 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
           };
         });
         setMessages(formattedData);
+
+        // InteractionManager.runAfterInteractions(() => {
+        //   flatListRef.current?.scrollToEnd({ animated: false });
+        // });
       });
   }, [convID]);
 
@@ -90,9 +97,7 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
       ]);
 
       // Cuộn đến cuối danh sách khi có tin nhắn mới
-      if (flatListRef.current) {
-        flatListRef.current.scrollToEnd();
-      }
+      // Cuộn sau khi cập nhật state (delay để chờ FlatList render)
     };
 
     // Hủy sự kiện trước đó trước khi lắng nghe sự kiện mới
@@ -107,13 +112,29 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
     };
   }, []); // Chỉ chạy một lần khi component mount
 
-  // Cuộn đến cuối danh sách khi messages thay đổi
-  useLayoutEffect(() => {
-    if (flatListRef.current) {
-      console.log("Cuộn đến cuối danh sách tin nhắn");
-      flatListRef.current.scrollToEnd();
+  // Scroll xuống cuối khi mount lần đầu
+  useEffect(() => {
+    if (messages.length > 0 && !initialScrollDone) {
+      // Đợi FlatList render xong
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+        setInitialScrollDone(true);
+      }, 1000); // Hoặc 0 nếu nội dung ít
     }
-  }, [messages]); // Mỗi khi messages thay đổi, sẽ cuộn xuống cuối
+  }, [messages]);
+
+  const handleScroll = (e: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+    const isBottom =
+      layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+    setIsAtBottom(isBottom);
+  };
+
+  const handleContentSizeChange = () => {
+    if (initialScrollDone && isAtBottom) {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }
+  };
 
   // Hàm chọn ảnh và cập nhật vào files
   const pickImage = async () => {
@@ -247,7 +268,7 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
         <Text className="ml-3 font-bold text-lg">BS. Trung Hiếu</Text>
         <TouchableOpacity
           className="ml-auto"
-          onPress={() => navigation.navigate("VideoCallScreen")}
+          onPress={() => navigation.navigate("VideoCallScreen", { doctorID })}
         >
           <Ionicons name="call-outline" size={24} color="black" />
         </TouchableOpacity>
@@ -260,6 +281,10 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem} // Sử dụng renderItem để hiển thị từng MessageItem
         className="flex-1"
+        onScroll={handleScroll}
+        onContentSizeChange={handleContentSizeChange}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: 12 }}
       />
 
       {/* Hiển thị tên file đã chọn */}

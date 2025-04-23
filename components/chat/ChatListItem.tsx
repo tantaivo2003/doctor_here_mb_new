@@ -33,14 +33,14 @@ export const ChatListItem: FC<ChatListItemProps> = ({ doctor, onPress }) => {
       {/* Nội dung tin nhắn */}
       <View className="flex-1 ml-3">
         <Text className="font-semibold text-gray-900">{doctor.name}</Text>
-        {/* <Text className="text-gray-500 text-sm truncate w-48">
+        <Text className="text-gray-500 text-sm truncate w-48">
           {doctor.message}
-        </Text> */}
+        </Text>
       </View>
 
       {/* Thời gian & số tin nhắn chưa đọc */}
       <View className="items-end">
-        {/* <Text className="text-xs text-gray-400">{doctor.time}</Text> */}
+        <Text className="text-xs text-gray-400">{doctor.time}</Text>
         {doctor.unreadCount > 0 && (
           <View className="bg-red-500 w-5 h-5 rounded-full items-center justify-center mt-1">
             <Text className="text-white text-xs">{doctor.unreadCount}</Text>
