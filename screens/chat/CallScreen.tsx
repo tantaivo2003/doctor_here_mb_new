@@ -8,12 +8,6 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 import { getAvt, getUserID } from "../../services/storage";
-import { stringeeClient } from "../../services/stringeeConfig";
-import {
-  StringeeCall2,
-  StringeeVideoView,
-  StringeeCall2Listener,
-} from "stringee-react-native-v2";
 
 const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
   const { doctorID } = route.params;
@@ -29,7 +23,6 @@ const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [notificationType, setNotificationType] = useState("success"); // Hoặc "error"
   const [notificationMessage, setNotificationMessage] = useState("");
-  const [call, setCall] = useState<StringeeCall2 | null>(null);
 
   const localVideoRef = useRef(null);
 
