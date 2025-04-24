@@ -169,7 +169,11 @@ declare module "stringee-react-native-v2" {
     videoResolution: any;
     uuid: string;
 
-    constructor(stringeeClient: StringeeClient, from: string, to: string);
+    constructor(props: {
+      stringeeClient: StringeeClient;
+      from: string;
+      to: string;
+    });
 
     setListener(stringeeCall2Listener: StringeeCall2Listener): void;
     makeCall(): Promise<void>;

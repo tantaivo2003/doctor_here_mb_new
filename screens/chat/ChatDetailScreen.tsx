@@ -15,6 +15,9 @@ import socket, { sendMessage, onMessageReceived } from "../../socket"; // Hàm W
 import { set } from "date-fns";
 import * as ImagePicker from "expo-image-picker"; // Thêm thư viện chọn ảnh
 import { InteractionManager } from "react-native";
+import { stringeeClient } from "../../stringee/stringeeClient"; // đảm bảo bạn có hàm createCall
+import { StringeeCall2, StringeeCall2Listener } from "stringee-react-native-v2";
+// import { stringeeClient } from "../../services/stringeeConfig";
 
 const ChatDetailScreen: FC = ({ route, navigation }: any) => {
   const flatListRef = useRef<FlatList>(null); // Tạo tham chiếu đến FlatList
@@ -30,6 +33,27 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
   console.log(doctorID);
 
   const API_BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL;
+
+  useEffect(() => {
+    const connectStringee = async () => {
+      console.log(`${API_BASE_URL}/api/video_call/token`);
+      const response = await fetch(`${API_BASE_URL}/api/video_call/token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userID: userID }),
+      });
+      const data = await response.json();
+      const token = data;
+      console.log("Token: ", token);
+
+      if (token) {
+        stringeeClient.connect(token);
+      }
+    };
+    connectStringee();
+  }, []);
 
   // Lấy danh sách tin nhắn từ API
   useEffect(() => {

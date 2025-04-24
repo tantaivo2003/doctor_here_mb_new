@@ -4,7 +4,7 @@ import {
   StringeeClientListener,
 } from "stringee-react-native-v2";
 import { getUserID } from "./storage";
-
+console.log("StringeeClient initialized");
 const API_BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 const stringeeClient: StringeeClient = new StringeeClient();
 
@@ -48,6 +48,7 @@ stringeeClientListener.onIncomingCall2 = (stringeeClient, stringeeCall2) => {
 stringeeClient.setListener(stringeeClientListener);
 
 (async () => {
+  console.log("Connecting to StringeeClient...");
   const response = await fetch(`${API_BASE_URL}/api/video_call/token`, {
     method: "POST",
     headers: {

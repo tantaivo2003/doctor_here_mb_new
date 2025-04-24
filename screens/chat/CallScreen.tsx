@@ -33,7 +33,7 @@ const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
 
   const localVideoRef = useRef(null);
 
-  const stringeeCall2Listener = new StringeeCall2Listener();
+  // const stringeeCall2Listener = new StringeeCall2Listener();
 
   // useEffect(() => {
   //   // Listen for incoming calls and initialize the call
@@ -72,69 +72,73 @@ const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
   }, []);
   // Hàm xử lý việc tắt/bật micro
   const toggleAudio = () => {
-    if (call) {
-      call
-        .mute(!isAudioMuted)
-        .then(() => {
-          setIsAudioMuted(!isAudioMuted);
-        })
-        .catch(console.error);
-    }
+    // if (call) {
+    //   call
+    //     .mute(!isAudioMuted)
+    //     .then(() => {
+    //       setIsAudioMuted(!isAudioMuted);
+    //     })
+    //     .catch(console.error);
+    // }
   };
 
   // Hàm xử lý việc tắt/bật video
   const toggleVideo = () => {
-    if (call) {
-      call
-        .enableVideo(!isVideoEnabled)
-        .then(() => {
-          setIsVideoEnabled(!isVideoEnabled);
-        })
-        .catch(console.error);
-    }
+    // if (call) {
+    //   call
+    //     .enableVideo(!isVideoEnabled)
+    //     .then(() => {
+    //       setIsVideoEnabled(!isVideoEnabled);
+    //     })
+    //     .catch(console.error);
+    // }
   };
 
   // Hàm xử lý việc kết thúc cuộc gọi
   const hangUp = () => {
-    if (call) {
-      call
-        .hangup()
-        .then(() => {
-          console.log("hangup success");
-          navigation.goBack(); // Go back after hanging up
-        })
-        .catch(console.error);
-    }
+    // if (call) {
+    //   call
+    //     .hangup()
+    //     .then(() => {
+    //       console.log("hangup success");
+    //       navigation.goBack(); // Go back after hanging up
+    //     })
+    //     .catch(console.error);
+    // }
   };
 
-  // Handle local and remote tracks
-  stringeeCall2Listener.onReceiveLocalTrack = (call2, videoTrack) => {
-    setLocalTrack(videoTrack);
-    console.log("onReceiveLocalTrack");
-  };
+  // // Handle local and remote tracks
+  // stringeeCall2Listener.onReceiveLocalTrack = (call2, videoTrack) => {
+  //   setLocalTrack(videoTrack);
+  //   console.log("onReceiveLocalTrack");
+  // };
 
-  stringeeCall2Listener.onReceiveRemoteTrack = (call2, videoTrack) => {
-    setRemoteTrack(videoTrack);
-    console.log("onReceiveRemoteTrack");
-  };
+  // stringeeCall2Listener.onReceiveRemoteTrack = (call2, videoTrack) => {
+  //   setRemoteTrack(videoTrack);
+  //   console.log("onReceiveRemoteTrack");
+  // };
 
-  // Make a call
-  const makeCall = () => {
-    if (!patientId || !doctorID) {
-      console.error("Missing patientId or doctorID");
-      return;
-    }
+  // // Make a call
+  // const makeCall = () => {
+  //   if (!patientId || !doctorID) {
+  //     console.error("Missing patientId or doctorID");
+  //     return;
+  //   }
 
-    const newCall = new StringeeCall2(stringeeClient, patientId, doctorID);
-    newCall.setListener(stringeeCall2Listener);
-    newCall
-      .makeCall()
-      .then(() => {
-        console.log("makeCall success");
-        setCall(newCall); // Set the active call
-      })
-      .catch(console.error);
-  };
+  //   const newCall = new StringeeCall2({
+  //     stringeeClient,
+  //     from: patientId,
+  //     to: doctorID,
+  //   });
+  //   newCall.setListener(stringeeCall2Listener);
+  //   newCall
+  //     .makeCall()
+  //     .then(() => {
+  //       console.log("makeCall success");
+  //       setCall(newCall); // Set the active call
+  //     })
+  //     .catch(console.error);
+  // };
 
   return (
     <View className="flex-1 bg-black">
@@ -156,24 +160,24 @@ const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
 
       {/* Hiển thị video của bác sĩ */}
       <View className="flex-1 justify-center items-center">
-        {remoteTrack && (
+        {/* {remoteTrack && (
           <StringeeVideoView
             style={{ flex: 1 }}
             videoTrack={remoteTrack}
             local={false}
           />
-        )}
+        )} */}
       </View>
 
       {/* Hiển thị video của bệnh nhân */}
       <View className="absolute top-10 left-4 w-32 h-48 rounded-md z-20">
-        {localTrack && (
+        {/* {localTrack && (
           <StringeeVideoView
             style={{ width: "100%", height: "100%", borderRadius: 10 }}
             videoTrack={localTrack}
             local={true}
           />
-        )}
+        )} */}
       </View>
 
       {/* Các nút điều khiển cuộc gọi */}
