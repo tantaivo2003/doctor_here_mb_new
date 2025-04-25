@@ -1,218 +1,271 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Image,
-} from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
-import Modal from "react-native-modal";
+import { View, Text, TouchableOpacity } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
+// UI Components
+import Toast from "react-native-toast-message";
 import LoadingAnimation from "../../components/ui/LoadingAnimation";
-import { storeHealthData, getHealthData } from "../../services/storage";
 import HealthMetricsLineChart from "../../components/HealthMetrics/HealthMetricsLineChart";
+import HealthMetricCard from "../../components/HealthMetrics/HealthMetricCard";
+import HealthDataInputModal from "../../components/HealthMetrics/HealthDataInputModal";
 
-// Danh sách các chỉ số nhịp tim và nhịp thở
-const heartRateMetrics = [
-  { key: "heart_rate_records", label: "Nhịp tim", unit: "BPM" },
-  { key: "respiratory_rate_records", label: "Nhịp thở", unit: "lần/phút" },
+// Local storage
+import { storeHealthData, getHealthData } from "../../services/storage";
+
+// Health Connect Permissions & Initialization
+import { HEART_SCREEN_PERMISSIONS } from "../../services/healthConnect/permissions";
+import {
+  checkAndRequestPermissions,
+  revokePermissions,
+  readGrantedPermissions,
+} from "../../services/healthConnect/healthConnectPermissions";
+import { initializeHealthConnect } from "../../services/healthConnect/healthConnect";
+
+// Health Records
+import {
+  fetchHealthRecords,
+  fetchLatestHealthRecord,
+} from "../../utils/readHealthRecords";
+import { insertHealthRecord } from "../../utils/insertHealthRecord";
+import {
+  groupHealthRecordsByPeriod,
+  fetchAndGroupHealthRecords,
+} from "../../utils/groupHealthRecordsByPeriod";
+
+// Utility functions
+import SelectField from "../../components/ui/SelectField";
+import { convertOptionToInterval } from "../../utils/validators";
+
+// Types
+import { HealthRecord } from "../../types/types";
+
+const displayOptions = [
+  { title: "Ngày", icon: "calendar" },
+  { title: "Tuần", icon: "calendar-week" },
+  { title: "Tháng", icon: "calendar-month" },
+  { title: "Năm", icon: "calendar-multiple" },
 ];
 
-const HeartRateScreen = () => {
-  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
-  const [value, setValue] = useState("");
-  const [heartRateData, setHeartRateData] = useState<{
-    [key: string]: number | null;
-  }>({
-    heart_rate_records: null,
-    respiratory_rate_records: null,
-  });
+const HeartRateScreen = ({ navigation }: any) => {
+  const [loading, setLoading] = useState(false);
 
-  const [heartRateRecords, setHeartRateRecords] = useState<
-    { date: string; value: number }[]
-  >([]);
+  const [latestHeartRateRecord, setLatestHeartRateRecord] =
+    useState<HealthRecord | null>(null);
+  const [latestRespiratoryRateRecord, setLatestRespiratoryRateRecord] =
+    useState<HealthRecord | null>(null);
+
+  const [heartRateRecords, setHeartRateRecords] = useState<HealthRecord[]>([]);
   const [respiratoryRateRecords, setRespiratoryRateRecords] = useState<
-    { date: string; value: number }[]
+    HealthRecord[]
   >([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  const [heartRateDisplayOption, setHeartRateDisplayOption] = useState("Tuần");
+  const [respiratoryRateDisplayOption, setRespiratoryRateDisplayOption] =
+    useState("Tuần");
+
+  const [isChangeHeartRate, setIsChangeHeartRate] = useState(false);
+  const [isChangeRespiratoryRate, setIsChangeRespiratoryRate] = useState(false);
+
+  const [changeHeartRateValue, setChangeHeartRateValue] = useState("");
+  const [changeRespiratoryRateValue, setChangeRespiratoryRateValue] =
+    useState("");
+
+  const init = async () => {
+    await initializeHealthConnect();
+    const hasPermission = await checkAndRequestPermissions(
+      HEART_SCREEN_PERMISSIONS
+    );
+    return hasPermission;
+  };
+
+  const fetchLatestData = async () => {
+    const latestHeartRate = await fetchLatestHealthRecord("HeartRate");
+    const latestRespiratoryRate = await fetchLatestHealthRecord(
+      "RespiratoryRate"
+    );
+
+    if (latestHeartRate) {
+      setLatestHeartRateRecord({
+        value: latestHeartRate.value,
+        date: latestHeartRate.date,
+      });
+    }
+
+    if (latestRespiratoryRate) {
+      setLatestRespiratoryRateRecord({
+        value: latestRespiratoryRate.value,
+        date: latestRespiratoryRate.date,
+      });
+    }
+  };
+  const fetchRecords = async () => {
+    const now = new Date();
+    const past = new Date();
+    past.setMonth(now.getMonth() - 12); // lấy trong 12 tháng gần nhất
+
+    const heartRateInterval = convertOptionToInterval(heartRateDisplayOption);
+    const respiratoryRateInterval = convertOptionToInterval(
+      respiratoryRateDisplayOption
+    );
+
+    const heartRateData = await fetchAndGroupHealthRecords(
+      "HeartRate",
+      past.toISOString(),
+      now.toISOString(),
+      heartRateInterval
+    );
+
+    const respiratoryRateData = await fetchAndGroupHealthRecords(
+      "RespiratoryRate",
+      past.toISOString(),
+      now.toISOString(),
+      respiratoryRateInterval
+    );
+    if (heartRateData) {
+      setHeartRateRecords(heartRateData);
+    }
+    if (respiratoryRateData) {
+      setRespiratoryRateRecords(respiratoryRateData);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      let updatedData: { [key: string]: number | null } = {};
-      for (let metric of heartRateMetrics) {
-        const data = await getHealthData(metric.key);
-        updatedData[metric.key] =
-          data.length > 0 ? data[data.length - 1].value : null;
+    const initAndFetch = async () => {
+      setLoading(true);
+      const hasPermission = await init();
+      if (!hasPermission) {
+        navigation.goBack();
+        return;
       }
-      setHeartRateData(updatedData);
-    };
-
-    const fetchHeartRateRecords = async () => {
-      const heartRateData = await getHealthData("heart_rate_records");
-      const respiratoryRateData = await getHealthData(
-        "respiratory_rate_records"
-      );
-
-      setHeartRateRecords(heartRateData);
-      setRespiratoryRateRecords(respiratoryRateData);
+      await fetchLatestData();
       setLoading(false);
     };
 
-    fetchData();
-    fetchHeartRateRecords();
+    initAndFetch();
   }, []);
 
-  const handleSaveData = async () => {
-    if (!selectedMetric || !value) return;
+  useEffect(() => {
+    fetchRecords();
+  }, [heartRateDisplayOption, respiratoryRateDisplayOption]);
+
+  const handleSaveData = async (value: string, label: string) => {
     setLoading(true);
     try {
-      const numericValue = parseFloat(value);
-      if (isNaN(numericValue) || numericValue <= 0) {
-        alert("Vui lòng nhập giá trị hợp lệ!");
-        return;
+      const now = new Date().toISOString();
+      if (label === "nhịp tim") {
+        const heartRate = parseFloat(value);
+        if (isNaN(heartRate)) {
+          Toast.show({
+            type: "error",
+            text1: "Giá trị nhịp tim không hợp lệ!",
+          });
+          return;
+        }
+        await insertHealthRecord("HeartRate", heartRate);
+        setLatestHeartRateRecord({ value: heartRate, date: now });
+      } else {
+        const respiratoryRate = parseFloat(value);
+        if (isNaN(respiratoryRate)) {
+          Toast.show({
+            type: "error",
+            text1: "Giá trị nhịp thở không hợp lệ!",
+          });
+          return;
+        }
+        await insertHealthRecord("RespiratoryRate", respiratoryRate);
+        setLatestRespiratoryRateRecord({ value: respiratoryRate, date: now });
       }
-      await storeHealthData(selectedMetric, numericValue);
-      setHeartRateData((prev) => ({ ...prev, [selectedMetric]: numericValue }));
-      setModalVisible(false);
     } catch (error) {
       console.error("Lỗi khi lưu dữ liệu:", error);
+      Toast.show({ type: "error", text1: "Lỗi khi lưu dữ liệu!" });
     } finally {
       setLoading(false);
     }
   };
 
-  const getHeartRateStatus = (heartRate: number, respiratoryRate: number) => {
-    if (heartRate < 60 || respiratoryRate < 12) {
-      return {
-        color: "bg-blue-100",
-        textColor: "text-blue-700",
-        status: "Nhịp tim/thở thấp",
-        advice:
-          "Bạn nên tham khảo ý kiến bác sĩ nếu có triệu chứng bất thường.",
-      };
-    } else if (heartRate <= 100 && respiratoryRate <= 20) {
-      return {
-        color: "bg-green-100",
-        textColor: "text-green-700",
-        status: "Nhịp tim/thở bình thường",
-        advice: "Tiếp tục duy trì lối sống lành mạnh!",
-      };
-    } else {
-      return {
-        color: "bg-red-100",
-        textColor: "text-red-700",
-        status: "Nhịp tim/thở cao",
-        advice: "Bạn nên giảm căng thẳng và theo dõi sức khỏe chặt chẽ.",
-      };
-    }
-  };
-
-  const { color, textColor, status, advice } = getHeartRateStatus(
-    heartRateData.heart_rate_records || 0,
-    heartRateData.respiratory_rate_records || 0
-  );
   return (
     <ScrollView className="flex-1 p-4 bg-white">
       {loading ? (
         <LoadingAnimation />
       ) : (
-        <>
-          <View className="flex-row justify-between mb-4">
-            {heartRateMetrics.map((metric) => (
-              <TouchableOpacity
-                key={metric.key}
-                className="flex-1 bg-gray-100 p-4 rounded-lg mx-1 flex-row items-center"
-                onPress={() => {
-                  setSelectedMetric(metric.key);
-                  setValue("");
-                  setModalVisible(true);
-                }}
-              >
-                {/* Hình ảnh */}
-                <Image
-                  source={
-                    metric.key === "heart_rate_records"
-                      ? require("../../assets/healthMetrics/heartRate.png")
-                      : require("../../assets/healthMetrics/respiratoryRate.png")
-                  }
-                  className="w-16 h-16 mr-4"
-                  resizeMode="contain"
-                />
-                <View className="flex-1">
-                  <Text className="text-gray-600">{metric.label}</Text>
-                  <Text className="text-lg font-bold">
-                    {heartRateData[metric.key]
-                      ? `${heartRateData[metric.key]} ${metric.unit}`
-                      : "Chưa có dữ liệu"}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-          {/* Trạng thái nhịp tim/thở */}
-          {heartRateData.heart_rate_records != null && (
-            <View className={`${color} p-4 rounded-lg mb-4`}>
-              <Text className={`${textColor} font-semibold text-center`}>
-                Trạng thái nhịp tim/thở của bạn:{" "}
-                <Text className="font-bold">{status}</Text>. {advice}
-              </Text>
-            </View>
-          )}
-          {/* Biểu đồ Nhịp tim */}
-          <Text className="text-lg font-bold mb-4">Biểu đồ Nhịp tim</Text>
-          <HealthMetricsLineChart healthMetricsLineData={heartRateRecords} />
+        <View className="flex-row justify-between mb-4">
+          <HealthMetricCard
+            label="Nhịp tim"
+            unit="lần/phút"
+            value={latestHeartRateRecord?.value}
+            imageSource={require("../../assets/healthMetrics/heartRate.png")}
+            onPress={() => setIsChangeHeartRate(true)}
+          />
+          <HealthMetricCard
+            label="Nhịp thở"
+            unit="lần/phút"
+            value={latestRespiratoryRateRecord?.value}
+            imageSource={require("../../assets/healthMetrics/respiratoryRate.png")}
+            onPress={() => setIsChangeRespiratoryRate(true)}
+          />
+        </View>
+      )}
 
-          {/* Biểu đồ Nhịp thở */}
-          <Text className="text-lg font-bold mt-6 mb-4">Biểu đồ Nhịp thở</Text>
+      {/* Biểu đồ height */}
+      {heartRateRecords.length > 0 && (
+        <>
+          <View className="flex-row justify-between items-center">
+            <View className="flex-1">
+              <Text className="text-lg font-bold">Biểu đồ nhịp tim</Text>
+            </View>
+            <View className="w-40">
+              <SelectField
+                label=""
+                data={displayOptions}
+                value={heartRateDisplayOption || ""}
+                placeholder="Kiểu hiển thị"
+                onChange={(val) => setHeartRateDisplayOption(val)}
+              />
+            </View>
+          </View>
+          <HealthMetricsLineChart healthMetricsLineData={heartRateRecords} />
+        </>
+      )}
+
+      {respiratoryRateRecords.length > 0 && (
+        <>
+          <View className="flex-row justify-between items-center">
+            <View className="flex-1">
+              <Text className="text-lg font-bold">Biểu đồ nhịp thở</Text>
+            </View>
+            <View className="w-40">
+              <SelectField
+                label=""
+                data={displayOptions}
+                value={respiratoryRateDisplayOption || ""}
+                placeholder="Kiểu hiển thị"
+                onChange={(val) => setRespiratoryRateDisplayOption(val)}
+              />
+            </View>
+          </View>
           <HealthMetricsLineChart
             healthMetricsLineData={respiratoryRateRecords}
           />
         </>
       )}
 
-      {/* Modal nhập dữ liệu */}
-      <Modal
-        isVisible={modalVisible}
-        animationIn="zoomIn"
-        animationOut="zoomOut"
-        onBackdropPress={() => setModalVisible(false)}
-      >
-        <View className="bg-white rounded-lg p-6">
-          <Text className="text-lg font-bold text-center mb-4">
-            Nhập {heartRateMetrics.find((m) => m.key === selectedMetric)?.label}{" "}
-            ({heartRateMetrics.find((m) => m.key === selectedMetric)?.unit})
-          </Text>
-          <View className="flex-row items-center border border-gray-300 p-2 rounded-xl mb-4">
-            <FontAwesome name="pencil" size={20} color="gray" />
-            <TextInput
-              className="ml-3 flex-1"
-              placeholder="Nhập giá trị"
-              value={value}
-              onChangeText={setValue}
-              keyboardType="numeric"
-              inputMode="numeric"
-            />
-          </View>
-          <View className="flex-row justify-end gap-4">
-            <TouchableOpacity
-              className="px-4 py-2 bg-gray-100 rounded-full"
-              onPress={() => setModalVisible(false)}
-            >
-              <Text className="text-gray-900">Hủy</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="px-4 py-2 bg-gray-900 rounded-full"
-              onPress={handleSaveData}
-            >
-              <Text className="text-white font-semibold">Lưu</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <HealthDataInputModal
+        isVisible={isChangeHeartRate}
+        label={"nhịp tim"}
+        setModalVisible={setIsChangeHeartRate}
+        value={changeHeartRateValue}
+        setValue={setChangeHeartRateValue}
+        handleSaveData={handleSaveData}
+      />
+
+      <HealthDataInputModal
+        isVisible={isChangeRespiratoryRate}
+        label={"nhịp thở"}
+        setModalVisible={setIsChangeRespiratoryRate}
+        value={changeRespiratoryRateValue}
+        setValue={setChangeRespiratoryRateValue}
+        handleSaveData={handleSaveData}
+      />
     </ScrollView>
   );
 };
-
 export default HeartRateScreen;

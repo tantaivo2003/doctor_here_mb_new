@@ -1,170 +1,174 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Image,
-} from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
-import Modal from "react-native-modal";
+import { Text, View } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
+// UI Components
+import Toast from "react-native-toast-message";
 import LoadingAnimation from "../../components/ui/LoadingAnimation";
-import { storeHealthData, getHealthData } from "../../services/storage";
+import HealthMetricCard from "../../components/HealthMetrics/HealthMetricCard";
+
+// Health Connect Permissions & Initialization
+import { ACTIVITY_PERMISSIONS } from "../../services/healthConnect/permissions";
+import { checkAndRequestPermissions } from "../../services/healthConnect/healthConnectPermissions";
+import { initializeHealthConnect } from "../../services/healthConnect/healthConnect";
+
+import SelectField from "../../components/ui/SelectField";
+import { convertOptionToInterval } from "../../utils/validators";
+
+// Health Records
+import {
+  getTodayHealthRecord,
+  getActivityRecord,
+} from "../../utils/readHealthRecords";
+
+import { HealthRecord } from "../../types/types";
 import HealthMetricsLineChart from "../../components/HealthMetrics/HealthMetricsLineChart";
 
-const activityMetrics = [
-  { key: "step_count_records", label: "Số bước đi", unit: "bước" },
-  { key: "walking_distance_records", label: "Quãng đường đi bộ", unit: "km" },
+const displayOptions = [
+  { title: "Ngày", icon: "calendar-today" },
+  { title: "Tuần", icon: "calendar-week" },
+  { title: "Tháng", icon: "calendar-month" },
+  { title: "Năm", icon: "calendar-multiple" },
 ];
 
-const ActivityScreen = () => {
-  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
-  const [value, setValue] = useState("");
-  const [activityData, setActivityData] = useState<{
-    [key: string]: number | null;
-  }>({
-    step_count_records: null,
-    walking_distance_records: null,
-  });
-  const [stepRecords, setStepRecords] = useState<
-    { date: string; value: number }[]
-  >([]);
-  const [distanceRecords, setDistanceRecords] = useState<
-    { date: string; value: number }[]
-  >([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
+const ActivityScreen = ({ navigation }: any) => {
+  const [loading, setLoading] = useState(false);
+  const [latestStepsRecord, setLatestStepsRecord] = useState<number>();
+  const [latestDistanceRecord, setLatestDistanceRecord] = useState<number>();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      let updatedData: { [key: string]: number | null } = {};
-      for (let metric of activityMetrics) {
-        const data = await getHealthData(metric.key);
-        updatedData[metric.key] =
-          data.length > 0 ? data[data.length - 1].value : null;
-      }
-      setActivityData(updatedData);
-    };
+  const [stepsRecords, setStepsRecords] = useState<HealthRecord[]>([]);
+  const [distanceRecords, setDistanceRecords] = useState<HealthRecord[]>([]);
 
-    const fetchActivityRecords = async () => {
-      const stepsData = await getHealthData("step_count_records");
-      const distanceData = await getHealthData("walking_distance_records");
-      setStepRecords(stepsData);
-      setDistanceRecords(distanceData);
-      setLoading(false);
-    };
+  const [stepsDisplayOption, setStepsDisplayOption] = useState("Năm");
+  const [distanceDisplayOption, setDistanceDisplayOption] = useState("Tuần");
 
-    fetchData();
-    fetchActivityRecords();
-  }, []);
+  const init = async () => {
+    await initializeHealthConnect();
+    const hasPermission = await checkAndRequestPermissions(
+      ACTIVITY_PERMISSIONS
+    );
+    return hasPermission;
+  };
 
-  const handleSaveData = async () => {
-    if (!selectedMetric || !value) return;
-    setLoading(true);
-    try {
-      const numericValue = parseFloat(value);
-      if (isNaN(numericValue) || numericValue <= 0) {
-        alert("Vui lòng nhập giá trị hợp lệ!");
-        return;
-      }
-      await storeHealthData(selectedMetric, numericValue);
-      setActivityData((prev) => ({ ...prev, [selectedMetric]: numericValue }));
-      setModalVisible(false);
-    } catch (error) {
-      console.error("Lỗi khi lưu dữ liệu:", error);
-    } finally {
-      setLoading(false);
+  const fetchLatestData = async () => {
+    const latestSteps = await getTodayHealthRecord("Steps");
+    const latestDistance = await getTodayHealthRecord("Distance");
+
+    if (latestSteps) setLatestStepsRecord(latestSteps);
+    if (latestDistance) setLatestDistanceRecord(latestDistance);
+  };
+
+  const fetchRecords = async () => {
+    const now = new Date();
+    const past = new Date();
+    past.setMonth(now.getMonth() - 1); // lấy trong 12 tháng gần nhất
+
+    const stepsInterval = convertOptionToInterval(stepsDisplayOption);
+    const distanceInterval = convertOptionToInterval(distanceDisplayOption);
+
+    const stepsRecords = await getActivityRecord(
+      "Steps",
+      past.toISOString(),
+      now.toISOString(),
+      stepsInterval
+    );
+    const distanceRecords = await getActivityRecord(
+      "Distance",
+      past.toISOString(),
+      now.toISOString(),
+      distanceInterval
+    );
+
+    if (stepsRecords) {
+      setStepsRecords(stepsRecords);
+    }
+    if (distanceRecords) {
+      setDistanceRecords(distanceRecords);
     }
   };
+
+  useEffect(() => {
+    const initAndFetch = async () => {
+      setLoading(true);
+      const hasPermission = await init();
+      if (!hasPermission) {
+        navigation.goBack();
+        return;
+      }
+      await fetchLatestData();
+      await fetchRecords();
+      setLoading(false);
+    };
+    initAndFetch();
+  }, []);
+
+  useEffect(() => {
+    fetchRecords();
+  }, [stepsDisplayOption, distanceDisplayOption]);
 
   return (
     <ScrollView className="flex-1 p-4 bg-white">
       {loading ? (
         <LoadingAnimation />
       ) : (
-        <View>
-          <View className="flex-row justify-between mb-4">
-            {activityMetrics.map((metric) => (
-              <TouchableOpacity
-                key={metric.key}
-                className="flex-1 bg-gray-100 p-2 rounded-lg mx-1 flex-row items-center"
-                onPress={() => {
-                  setSelectedMetric(metric.key);
-                  setValue("");
-                  setModalVisible(true);
-                }}
-              >
-                {/* Hình ảnh */}
-                <Image
-                  source={
-                    metric.key === "step_count_records"
-                      ? require("../../assets/healthMetrics/stepCount.png")
-                      : require("../../assets/healthMetrics/distance.png")
-                  }
-                  className="w-16 h-16 mr-4"
-                  resizeMode="contain"
-                />
-                <View className="flex-1">
-                  <Text className="text-gray-600">{metric.label}</Text>
-                  <Text className="text-lg font-bold">
-                    {activityData[metric.key]
-                      ? `${activityData[metric.key]} ${metric.unit}`
-                      : "Chưa có dữ liệu"}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Text className="text-lg font-bold mb-4">Biểu đồ Số bước đi</Text>
-          <HealthMetricsLineChart healthMetricsLineData={stepRecords} />
-
-          <Text className="text-lg font-bold mt-6 mb-4">
-            Biểu đồ Quãng đường đi bộ
-          </Text>
-          <HealthMetricsLineChart healthMetricsLineData={distanceRecords} />
+        <View className="flex-row justify-between mb-4">
+          <HealthMetricCard
+            label="Bước đi"
+            unit="bước"
+            value={latestStepsRecord}
+            imageSource={require("../../assets/healthMetrics/stepCount.png")}
+          />
+          <HealthMetricCard
+            label="Quãng đường"
+            unit="mét"
+            value={latestDistanceRecord?.toFixed(2)}
+            imageSource={require("../../assets/healthMetrics/distance.png")}
+          />
         </View>
       )}
 
-      <Modal
-        isVisible={modalVisible}
-        animationIn="zoomIn"
-        animationOut="zoomOut"
-        onBackdropPress={() => setModalVisible(false)}
-      >
-        <View className="bg-white rounded-lg p-6">
-          <Text className="text-lg font-bold text-center mb-4">
-            Nhập {activityMetrics.find((m) => m.key === selectedMetric)?.label}{" "}
-            ({activityMetrics.find((m) => m.key === selectedMetric)?.unit})
-          </Text>
-          <View className="flex-row items-center border border-gray-300 p-2 rounded-xl mb-4">
-            <FontAwesome name="pencil" size={20} color="gray" />
-            <TextInput
-              className="ml-3 flex-1"
-              placeholder="Nhập giá trị"
-              value={value}
-              onChangeText={setValue}
-              keyboardType="numeric"
-              inputMode="numeric"
-            />
+      {/* Biểu đồ bước chân */}
+      {stepsRecords.length > 0 && (
+        <>
+          <View className="flex-row justify-between items-center">
+            <View className="flex-1">
+              <Text className="text-lg font-bold">Biểu đồ số bước chân</Text>
+            </View>
+            <View className="w-40">
+              <SelectField
+                label=""
+                data={displayOptions}
+                value={stepsDisplayOption || ""}
+                placeholder="Kiểu hiển thị"
+                onChange={(val) => setStepsDisplayOption(val)}
+              />
+            </View>
           </View>
-          <View className="flex-row justify-end gap-4">
-            <TouchableOpacity
-              className="px-4 py-2 bg-gray-100 rounded-full"
-              onPress={() => setModalVisible(false)}
-            >
-              <Text className="text-gray-900">Hủy</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="px-4 py-2 bg-gray-900 rounded-full"
-              onPress={handleSaveData}
-            >
-              <Text className="text-white font-semibold">Lưu</Text>
-            </TouchableOpacity>
+          <HealthMetricsLineChart healthMetricsLineData={stepsRecords} />
+        </>
+      )}
+
+      {/* Biểu đồ quãng đường di chuyển*/}
+      {distanceRecords.length > 0 && (
+        <>
+          <View className="flex-row justify-between items-center">
+            <View className="flex-1">
+              <Text className="text-lg font-bold">
+                Biểu đồ quãng đường di chuyển
+              </Text>
+            </View>
+            <View className="w-40">
+              <SelectField
+                label=""
+                data={displayOptions}
+                value={stepsDisplayOption || ""}
+                placeholder="Kiểu hiển thị"
+                onChange={(val) => setDistanceDisplayOption(val)}
+              />
+            </View>
           </View>
-        </View>
-      </Modal>
+          <HealthMetricsLineChart healthMetricsLineData={distanceRecords} />
+        </>
+      )}
     </ScrollView>
   );
 };

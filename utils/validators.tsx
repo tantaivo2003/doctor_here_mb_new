@@ -44,3 +44,20 @@ export const validateInsuranceInfo = (
 
   return { isValid: true };
 };
+
+export const convertOptionToInterval = (
+  option: string
+): "DAYS" | "WEEKS" | "MONTHS" | "YEARS" => {
+  switch (option) {
+    case "Ngày":
+      return "DAYS";
+    case "Tuần":
+      return "WEEKS";
+    case "Tháng":
+      return "MONTHS";
+    case "Năm":
+      return "YEARS";
+    default:
+      return "WEEKS"; // fallback
+  }
+};

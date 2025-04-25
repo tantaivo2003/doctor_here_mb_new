@@ -92,6 +92,9 @@ export const fetchMedicineSchedule = async (
   endDate: string
 ): Promise<MedicineSchedule[]> => {
   try {
+    console.log(
+      `${API_BASE_URL}/api/diagnosis/medicine_schedule?ptID=${patientId}&startDate=${startDate}&endDate=${endDate}`
+    );
     const res = await fetch(
       `${API_BASE_URL}/api/diagnosis/medicine_schedule?ptID=${patientId}&startDate=${startDate}&endDate=${endDate}`
     );

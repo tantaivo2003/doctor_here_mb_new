@@ -6,15 +6,7 @@ import {
 } from "react-native-health-connect";
 
 import Toast from "react-native-toast-message";
-import {
-  permissionsToRequest,
-  BMI_PERMISSIONS,
-  BLOOD_PRESSURE_PERMISSIONS,
-  HEART_RATE_PERMISSIONS,
-  RESPIRATORY_RATE_PERMISSIONS,
-  ACTIVITY_PERMISSIONS,
-  allPermissions,
-} from "./permissions";
+import { permissionsToRequest, allPermissions } from "./permissions";
 
 export const requestAllPermissions = async () => {
   try {

@@ -6,7 +6,7 @@ interface HealthMetricCardProps {
   unit: string;
   value?: string | number;
   imageSource?: any;
-  onPress: () => void;
+  onPress?: () => void;
 }
 
 const HealthMetricCard: React.FC<HealthMetricCardProps> = ({

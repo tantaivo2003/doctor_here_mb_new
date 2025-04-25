@@ -1,5 +1,5 @@
 export const formatDateTime = (
-  isoString: string,
+  isoString: any,
   formatType: "date" | "time" | "full" = "full"
 ): string => {
   const dateObj = new Date(isoString);

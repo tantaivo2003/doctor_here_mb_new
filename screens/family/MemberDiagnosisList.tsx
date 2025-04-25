@@ -10,7 +10,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 
 type Props = {
   member: {
-    ma_bn: string;
+    ma_benh_nhan_2: string;
     ho_va_ten: string;
     // thêm các field khác nếu cần
   };
@@ -26,7 +26,7 @@ export default function MemberDiagnosisList({ navigation, member }: Props) {
       const fetchData = async () => {
         setLoading(true);
         try {
-          const patientId = member.ma_bn;
+          const patientId = member.ma_benh_nhan_2;
           if (!patientId) {
             console.error("Không tìm thấy patientId trong AsyncStorage");
             return;

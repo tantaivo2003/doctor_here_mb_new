@@ -4,7 +4,6 @@ export const calculateBMI = (heightM: number, weightKg: number) => {
   }
 
   const bmi = parseFloat((weightKg / (heightM * heightM)).toFixed(1));
-  console.log("BMI = ", weightKg, heightM);
   return bmi;
 };
 
