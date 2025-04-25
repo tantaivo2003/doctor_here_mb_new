@@ -74,6 +74,7 @@ export const CallScreen = ({ goToHomeScreen, callId }: Props) => {
   return (
     <StreamCall call={call}>
       <View style={styles.container}>
+        <ParticipantCountText />
         <CallContent
           onHangupCallHandler={goToHomeScreen}
           CallControls={CustomCallControls}

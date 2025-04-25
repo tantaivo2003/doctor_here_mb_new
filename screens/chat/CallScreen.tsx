@@ -1,6 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 
+//Stream io
+import {
+  Call,
+  StreamCall,
+  useStreamVideoClient,
+  useCallStateHooks,
+  CallingState,
+  CallContent,
+  CallControlProps,
+  HangUpCallButton,
+  ToggleAudioPublishingButton as ToggleMic,
+  ToggleVideoPublishingButton as ToggleCamera,
+  useCall,
+} from "@stream-io/video-react-native-sdk";
+
 import NotificationModal from "../../components/ui/NotificationModal";
 import Modal from "react-native-modal";
 import Feather from "@expo/vector-icons/Feather";
@@ -26,27 +41,66 @@ const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
 
   const localVideoRef = useRef(null);
 
-  // const stringeeCall2Listener = new StringeeCall2Listener();
+  const client = useStreamVideoClient();
+  const [call, setCall] = useState<Call | null>(null);
+  const callRef = useRef<Call | null>(null);
+  const callId = "42";
+  const API_BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL;
+  const [userId, setUserId] = useState<string | null>("BN0000006");
 
   // useEffect(() => {
-  //   // Listen for incoming calls and initialize the call
-  //   stringeeClientListener.onIncomingCall2 = (client, incomingCall) => {
-  //     // Handle incoming call
-  //     incomingCall
-  //       .initAnswer()
-  //       .then(() => {
-  //         console.log("initAnswer success");
-  //         incomingCall
-  //           .answer()
-  //           .then(() => {
-  //             console.log("answer success");
-  //             setCall(incomingCall); // Set the active call
-  //           })
-  //           .catch(console.error);
-  //       })
-  //       .catch(console.error);
+  //   const fetchUserId = async () => {
+  //     const id = await getUserID();
+  //     setUserId(id);
   //   };
+  //   fetchUserId();
   // }, []);
+
+  useEffect(() => {
+    // const _call = client?.call("default", callId);
+    // _call?.join({ create: true }).then(() => setCall(_call));
+    const getCall = async () => {
+      console.log("getcall");
+      if (!userId) {
+        return;
+      }
+      const response = await fetch(`${API_BASE_URL}/api/video_call/call/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userID: userId,
+          callID: callId,
+        }),
+      });
+
+      console.log(response);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Call response:", data);
+        const _call = client?.call("default", callId);
+        _call?.join({ create: true }).then(() => setCall(_call));
+      } else {
+        console.error("Error fetching call:", response.statusText);
+        setNotificationVisible(true);
+        setNotificationType("error");
+        setNotificationMessage("Không thể tham gia cuộc gọi.");
+      }
+    };
+
+    getCall();
+  }, [client, callId, userId]);
+
+  useEffect(() => {
+    return () => {
+      // cleanup the call on unmount if the call was not left already
+      if (call?.state.callingState !== CallingState.LEFT) {
+        call?.leave();
+      }
+    };
+  }, [call]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,182 +117,131 @@ const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
     };
     fetchPatientId();
   }, []);
-  // Hàm xử lý việc tắt/bật micro
-  const toggleAudio = () => {
-    // if (call) {
-    //   call
-    //     .mute(!isAudioMuted)
-    //     .then(() => {
-    //       setIsAudioMuted(!isAudioMuted);
-    //     })
-    //     .catch(console.error);
-    // }
+
+  //Các nút tùy chỉnh
+  const HangupCallButton = () => {
+    const call = useCall();
+
+    const hangUp = async () => {
+      await call?.leave();
+      navigation.goBack();
+    };
+
+    return (
+      <TouchableOpacity
+        onPress={hangUp}
+        className="bg-red-500 rounded-full p-4"
+      >
+        <MaterialIcons name="call-end" size={30} color="white" />
+      </TouchableOpacity>
+    );
   };
 
-  // Hàm xử lý việc tắt/bật video
-  const toggleVideo = () => {
-    // if (call) {
-    //   call
-    //     .enableVideo(!isVideoEnabled)
-    //     .then(() => {
-    //       setIsVideoEnabled(!isVideoEnabled);
-    //     })
-    //     .catch(console.error);
-    // }
+  const ToggleVideoButton = () => {
+    const call = useCall();
+    const { useCameraState } = useCallStateHooks();
+    const { status } = useCameraState();
+    const toggleVideo = async () => {
+      await call?.camera.toggle();
+      setIsVideoEnabled((prev) => !prev);
+    };
+
+    return (
+      <TouchableOpacity
+        onPress={toggleVideo}
+        className="bg-teal-600 rounded-full p-4"
+      >
+        {isVideoEnabled ? (
+          <Feather name="video" size={30} color="white" />
+        ) : (
+          <Feather name="video-off" size={30} color="white" />
+        )}
+      </TouchableOpacity>
+    );
   };
 
-  // Hàm xử lý việc kết thúc cuộc gọi
-  const hangUp = () => {
-    // if (call) {
-    //   call
-    //     .hangup()
-    //     .then(() => {
-    //       console.log("hangup success");
-    //       navigation.goBack(); // Go back after hanging up
-    //     })
-    //     .catch(console.error);
-    // }
+  const ToggleAudioButton = () => {
+    const call = useCall();
+    const { useMicrophoneState } = useCallStateHooks();
+    const { status } = useMicrophoneState();
+    const toggleAudio = async () => {
+      await call?.microphone.toggle();
+      setIsAudioMuted((prev) => !prev);
+    };
+
+    return (
+      <TouchableOpacity
+        onPress={toggleAudio}
+        className="bg-teal-600 rounded-full p-4"
+      >
+        {isAudioMuted ? (
+          <Feather name="mic-off" size={30} color="white" />
+        ) : (
+          <Feather name="mic" size={30} color="white" />
+        )}
+      </TouchableOpacity>
+    );
   };
 
-  // // Handle local and remote tracks
-  // stringeeCall2Listener.onReceiveLocalTrack = (call2, videoTrack) => {
-  //   setLocalTrack(videoTrack);
-  //   console.log("onReceiveLocalTrack");
-  // };
+  // Các nút điều khiển cuộc gọi
+  const CustomCallControls = (props: CallControlProps) => {
+    return (
+      <View className="absolute bottom-8 left-0 right-0 flex-row justify-center items-center gap-10">
+        <ToggleAudioButton />
+        <ToggleVideoButton />
+        <HangupCallButton />
+      </View>
+    );
+  };
 
-  // stringeeCall2Listener.onReceiveRemoteTrack = (call2, videoTrack) => {
-  //   setRemoteTrack(videoTrack);
-  //   console.log("onReceiveRemoteTrack");
-  // };
-
-  // // Make a call
-  // const makeCall = () => {
-  //   if (!patientId || !doctorID) {
-  //     console.error("Missing patientId or doctorID");
-  //     return;
-  //   }
-
-  //   const newCall = new StringeeCall2({
-  //     stringeeClient,
-  //     from: patientId,
-  //     to: doctorID,
-  //   });
-  //   newCall.setListener(stringeeCall2Listener);
-  //   newCall
-  //     .makeCall()
-  //     .then(() => {
-  //       console.log("makeCall success");
-  //       setCall(newCall); // Set the active call
-  //     })
-  //     .catch(console.error);
-  // };
+  if (!call) {
+    return (
+      <View className="flex-1 bg-white justify-center items-center">
+        <Text className="text-lg font-bold">Đang tham gia cuộc gọi...</Text>
+      </View>
+    );
+  }
 
   return (
-    <View className="flex-1 bg-black">
-      {/* Hiển thị avatar của bệnh nhân */}
-      <View className="absolute top-4 right-4 w-32 h-48 rounded-md z-10">
-        {isVideoEnabled ? (
-          <Text>Video</Text>
-        ) : (
-          <Image
-            source={
-              patientAvt
-                ? { uri: patientAvt }
-                : require("../../assets/avatar-placeholder.png")
-            }
-            className="h-full w-full rounded-md"
-          />
-        )}
-      </View>
+    <StreamCall call={call}>
+      <View className="flex-1 bg-white justify-center">
+        <CallContent CallControls={CustomCallControls} />
 
-      {/* Hiển thị video của bác sĩ */}
-      <View className="flex-1 justify-center items-center">
-        {/* {remoteTrack && (
-          <StringeeVideoView
-            style={{ flex: 1 }}
-            videoTrack={remoteTrack}
-            local={false}
-          />
-        )} */}
-      </View>
+        {/* Modal thông báo */}
+        <NotificationModal
+          visible={notificationVisible}
+          type={notificationType}
+          message={notificationMessage}
+          onClose={() => setNotificationVisible(false)}
+        />
 
-      {/* Hiển thị video của bệnh nhân */}
-      <View className="absolute top-10 left-4 w-32 h-48 rounded-md z-20">
-        {/* {localTrack && (
-          <StringeeVideoView
-            style={{ width: "100%", height: "100%", borderRadius: 10 }}
-            videoTrack={localTrack}
-            local={true}
-          />
-        )} */}
-      </View>
-
-      {/* Các nút điều khiển cuộc gọi */}
-      <View className="absolute bottom-8 left-0 right-0 flex-row justify-center items-center gap-10">
-        <TouchableOpacity
-          onPress={toggleAudio}
-          className="bg-teal-600 rounded-full p-4"
+        {/* Modal gia hạn */}
+        <Modal
+          isVisible={modalVisible}
+          animationIn="zoomIn"
+          animationOut="zoomOut"
         >
-          {isAudioMuted ? (
-            <Feather name="mic-off" size={30} color="white" />
-          ) : (
-            <Feather name="mic" size={30} color="white" />
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={hangUp}
-          className="bg-red-500 rounded-full p-4"
-        >
-          <MaterialIcons name="call-end" size={30} color="white" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={toggleVideo}
-          className="bg-teal-600 rounded-full p-4"
-        >
-          {isVideoEnabled ? (
-            <Feather name="video" size={30} color="white" />
-          ) : (
-            <Feather name="video-off" size={30} color="white" />
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Modal thông báo */}
-      <NotificationModal
-        visible={notificationVisible}
-        type={notificationType}
-        message={notificationMessage}
-        onClose={() => setNotificationVisible(false)}
-      />
-
-      {/* Modal gia hạn */}
-      <Modal
-        isVisible={modalVisible}
-        animationIn="zoomIn"
-        animationOut="zoomOut"
-      >
-        <View className="justify-center items-center">
-          <View className="bg-white rounded-2xl p-6 items-center">
-            <Text className="text-lg font-bold text-center">
-              Xóa khỏi bác sĩ yêu thích?
-            </Text>
-            <View className="flex-row justify-around mt-4 gap-5">
-              <TouchableOpacity
-                className="py-3 px-6 bg-gray-100 w-2/5 items-center rounded-full"
-                onPress={() => setModalVisible(false)}
-              >
-                <Text>Hủy</Text>
-              </TouchableOpacity>
-              <TouchableOpacity className="py-3 px-6 bg-gray-900 w-2/5 items-center rounded-full">
-                <Text className="text-white">Xác nhận</Text>
-              </TouchableOpacity>
+          <View className="justify-center items-center">
+            <View className="bg-white rounded-2xl p-6 items-center">
+              <Text className="text-lg font-bold text-center">
+                Xóa khỏi bác sĩ yêu thích?
+              </Text>
+              <View className="flex-row justify-around mt-4 gap-5">
+                <TouchableOpacity
+                  className="py-3 px-6 bg-gray-100 w-2/5 items-center rounded-full"
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text>Hủy</Text>
+                </TouchableOpacity>
+                <TouchableOpacity className="py-3 px-6 bg-gray-900 w-2/5 items-center rounded-full">
+                  <Text className="text-white">Xác nhận</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
+    </StreamCall>
   );
 };
 
