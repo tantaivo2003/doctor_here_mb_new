@@ -1,237 +1,277 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Image,
-} from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
-import Modal from "react-native-modal";
+import { View, Text, TouchableOpacity } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
+// UI Components
+import Toast from "react-native-toast-message";
 import LoadingAnimation from "../../components/ui/LoadingAnimation";
-import { storeHealthData, getHealthData } from "../../services/storage";
 import HealthMetricsLineChart from "../../components/HealthMetrics/HealthMetricsLineChart";
+import HealthMetricCard from "../../components/HealthMetrics/HealthMetricCard";
+import HealthDataInputModal from "../../components/HealthMetrics/HealthDataInputModal";
 
-// Danh sách các chỉ số huyết áp
-const bloodPressureMetrics = [
-  { key: "systolic_pressure_records", label: "Huyết áp tâm thu", unit: "mmHg" },
-  {
-    key: "diastolic_pressure_records",
-    label: "Huyết áp tâm trương",
-    unit: "mmHg",
-  },
+// Local storage
+import { storeHealthData, getHealthData } from "../../services/storage";
+
+// Health Connect Permissions & Initialization
+import { BLOOD_PRESSURE_PERMISSIONS } from "../../services/healthConnect/permissions";
+import {
+  checkAndRequestPermissions,
+  revokePermissions,
+  readGrantedPermissions,
+} from "../../services/healthConnect/healthConnectPermissions";
+import { initializeHealthConnect } from "../../services/healthConnect/healthConnect";
+
+// Health Records
+import {
+  fetchHealthRecords,
+  fetchLatestHealthRecord,
+} from "../../utils/readHealthRecords";
+import { insertHealthRecord } from "../../utils/insertHealthRecord";
+import {
+  groupHealthRecordsByPeriod,
+  fetchAndGroupHealthRecords,
+} from "../../utils/groupHealthRecordsByPeriod";
+
+// Utility functions
+import SelectField from "../../components/ui/SelectField";
+import { convertOptionToInterval } from "../../utils/validators";
+
+// Types
+import { HealthRecord } from "../../types/types";
+import { set } from "date-fns";
+
+const displayOptions = [
+  { title: "Ngày", icon: "calendar" },
+  { title: "Tuần", icon: "calendar-week" },
+  { title: "Tháng", icon: "calendar-month" },
+  { title: "Năm", icon: "calendar-multiple" },
 ];
 
-const BloodPressureScreen = () => {
-  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
-  const [value, setValue] = useState("");
-  const [bloodPressureData, setBloodPressureData] = useState<{
-    [key: string]: number | null;
-  }>({
-    systolic_pressure_records: null,
-    diastolic_pressure_records: null,
-  });
+const BloodPressureScreen = ({ navigation }: any) => {
+  const [loading, setLoading] = useState(false);
 
-  const [systolicRecords, setSystolicRecords] = useState<
-    { date: string; value: number }[]
-  >([]);
-  const [diastolicRecords, setDiastolicRecords] = useState<
-    { date: string; value: number }[]
-  >([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [latestSystolicRecord, setLatestSystolicRecord] =
+    useState<HealthRecord | null>(null);
+  const [latestDiastolicRecord, setLatestDiastolicRecord] =
+    useState<HealthRecord | null>(null);
 
-  // Lấy dữ liệu đã lưu khi mở màn hình
+  const [diastolicRecords, setDiastolicRecords] = useState<HealthRecord[]>([]);
+  const [systolicRecords, setSystolicRecords] = useState<HealthRecord[]>([]);
+
+  const [systolicDisplayOption, setSystolicDisplayOption] = useState("Tuần");
+  const [diastolicDisplayOption, setDiastolicDisplayOption] = useState("Tuần");
+
+  const [isChangeSystolic, setIsChangeSystolic] = useState(false);
+  const [isChangeDiastolic, setIsChangeDiastolic] = useState(false);
+
+  const [changeSystolicValue, setChangeSystolicValue] = useState("");
+  const [changeDiastolicValue, setChangeDiastolicValue] = useState("");
+
+  const init = async () => {
+    await initializeHealthConnect();
+    const hasPermission = await checkAndRequestPermissions(
+      BLOOD_PRESSURE_PERMISSIONS
+    );
+    return hasPermission;
+  };
+
+  const fetchLatestData = async () => {
+    const latestBloodPressureRecord = await fetchLatestHealthRecord(
+      "BloodPressure"
+    );
+
+    if (latestBloodPressureRecord) {
+      setLatestSystolicRecord({
+        value: latestBloodPressureRecord.systolic,
+        date: latestBloodPressureRecord.time,
+      });
+      setLatestDiastolicRecord({
+        value: latestBloodPressureRecord.diastolic,
+        date: latestBloodPressureRecord.time,
+      });
+    }
+  };
+
+  const fetchRecords = async () => {
+    const now = new Date();
+    const past = new Date();
+    past.setMonth(now.getMonth() - 12); // lấy trong 12 tháng gần nhất
+
+    const diastolicInterval = convertOptionToInterval(diastolicDisplayOption);
+    const systolicInterval = convertOptionToInterval(systolicDisplayOption);
+
+    const diastolicData = await fetchAndGroupHealthRecords(
+      "BloodPressure",
+      past.toISOString(),
+      now.toISOString(),
+      diastolicInterval,
+      true,
+      false
+    );
+
+    const systolicData = await fetchAndGroupHealthRecords(
+      "BloodPressure",
+      past.toISOString(),
+      now.toISOString(),
+      systolicInterval,
+      false,
+      true
+    );
+
+    if (diastolicData) {
+      setDiastolicRecords(diastolicData);
+    }
+    if (systolicData) {
+      setSystolicRecords(systolicData);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      let updatedData: { [key: string]: number | null } = {};
-      for (let metric of bloodPressureMetrics) {
-        const data = await getHealthData(metric.key);
-        updatedData[metric.key] =
-          data.length > 0 ? data[data.length - 1].value : null;
+    const initAndFetch = async () => {
+      setLoading(true);
+      const hasPermission = await init();
+      if (!hasPermission) {
+        navigation.goBack();
+        return;
       }
-      setBloodPressureData(updatedData);
+      fetchLatestData();
+      fetchRecords();
+
       setLoading(false);
     };
 
-    const fetchBloodPressureRecords = async () => {
-      const systolicData = await getHealthData("systolic_pressure_records");
-      const diastolicData = await getHealthData("diastolic_pressure_records");
-
-      setSystolicRecords(systolicData);
-      setDiastolicRecords(diastolicData);
-    };
-
-    fetchData();
-    fetchBloodPressureRecords();
+    initAndFetch();
   }, []);
 
-  // Xử lý lưu dữ liệu
-  const handleSaveData = async () => {
-    if (!selectedMetric || !value) return;
+  useEffect(() => {
+    fetchRecords();
+  }, [diastolicDisplayOption, systolicDisplayOption]);
+
+  const handleSaveData = async (value: string, label: string) => {
     setLoading(true);
     try {
-      const numericValue = parseFloat(value);
-      if (isNaN(numericValue) || numericValue <= 0) {
-        alert("Vui lòng nhập giá trị hợp lệ!");
-        return;
+      const now = new Date().toISOString();
+      if (label === "huyết áp tâm thu") {
+        const systolicValue = parseFloat(value);
+        if (isNaN(systolicValue)) {
+          Toast.show({
+            type: "error",
+            text1: "Giá trị huyết áp tâm thu không hợp lệ!",
+          });
+          return;
+        }
+        await insertHealthRecord("BloodPressure", {
+          systolic: changeSystolicValue,
+          diastolic: latestDiastolicRecord?.value,
+        });
+        setLatestSystolicRecord({ value: systolicValue, date: now });
+      } else {
+        const diastolicValue = parseFloat(value);
+        if (isNaN(diastolicValue)) {
+          Toast.show({
+            type: "error",
+            text1: "Giá trị huyết áp tâm trương không hợp lệ!",
+          });
+          return;
+        }
+        await insertHealthRecord("BloodPressure", {
+          systolic: latestSystolicRecord?.value,
+          diastolic: changeDiastolicValue,
+        });
+        setLatestDiastolicRecord({ value: diastolicValue, date: now });
       }
-      await storeHealthData(selectedMetric, numericValue);
-      setBloodPressureData((prev) => ({
-        ...prev,
-        [selectedMetric]: numericValue,
-      }));
-
-      setModalVisible(false);
     } catch (error) {
       console.error("Lỗi khi lưu dữ liệu:", error);
+      Toast.show({ type: "error", text1: "Lỗi khi lưu dữ liệu!" });
     } finally {
       setLoading(false);
     }
   };
-
-  const getBloodPressureStatus = (systolic: number, diastolic: number) => {
-    if (systolic < 90 || diastolic < 60) {
-      return {
-        color: "bg-blue-100",
-        textColor: "text-blue-700",
-        status: "Huyết áp thấp",
-        advice: "Bạn nên bổ sung muối và nước đầy đủ.",
-      };
-    } else if (systolic < 120 && diastolic < 80) {
-      return {
-        color: "bg-green-100",
-        textColor: "text-green-700",
-        status: "Huyết áp bình thường",
-        advice: "Hãy duy trì lối sống lành mạnh!",
-      };
-    } else if (systolic <= 139 || diastolic <= 89) {
-      return {
-        color: "bg-yellow-100",
-        textColor: "text-yellow-700",
-        status: "Tiền tăng huyết áp",
-        advice: "Bạn cần chú ý chế độ ăn uống và tập luyện.",
-      };
-    } else {
-      return {
-        color: "bg-red-100",
-        textColor: "text-red-700",
-        status: "Huyết áp cao",
-        advice: "Bạn nên gặp bác sĩ để được tư vấn chi tiết.",
-      };
-    }
-  };
-
-  const { color, textColor, status, advice } = getBloodPressureStatus(
-    bloodPressureData.systolic_pressure_records || 0,
-    bloodPressureData.diastolic_pressure_records || 0
-  );
 
   return (
     <ScrollView className="flex-1 p-4 bg-white">
       {loading ? (
         <LoadingAnimation />
       ) : (
+        <View className="flex-row justify-between mb-4">
+          <HealthMetricCard
+            label="Huyết áp tâm thu"
+            unit="mmHg"
+            value={latestSystolicRecord?.value}
+            imageSource={require("../../assets/healthMetrics/bloodPressure1.png")}
+            onPress={() => setIsChangeSystolic(true)}
+          />
+          <HealthMetricCard
+            label="Huyết áp tâm trương"
+            unit="mmHg"
+            value={latestDiastolicRecord?.value}
+            imageSource={require("../../assets/healthMetrics/bloodPressure2.png")}
+            onPress={() => setIsChangeDiastolic(true)}
+          />
+        </View>
+      )}
+
+      {systolicRecords.length > 0 && (
         <>
-          {/* Thông tin huyết áp */}
-          <View className="flex-row justify-between mb-4">
-            {bloodPressureMetrics.map((metric) => (
-              <TouchableOpacity
-                key={metric.key}
-                className="flex-1 bg-gray-100 p-2 rounded-lg mx-1 flex-row items-center"
-                onPress={() => {
-                  setSelectedMetric(metric.key);
-                  setValue("");
-                  setModalVisible(true);
-                }}
-              >
-                {/* Hình ảnh */}
-                <Image
-                  source={
-                    metric.key === "systolic_pressure_records"
-                      ? require("../../assets/healthMetrics/bloodPressure1.png")
-                      : require("../../assets/healthMetrics/bloodPressure2.png")
-                  }
-                  className="w-16 h-16 mr-4"
-                  resizeMode="contain"
-                />
-                <View className="flex-1">
-                  <Text className="text-gray-600">{metric.label}</Text>
-                  <Text className="text-lg font-bold">
-                    {bloodPressureData[metric.key]
-                      ? `${bloodPressureData[metric.key]} ${metric.unit}`
-                      : "Chưa có dữ liệu"}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-          {bloodPressureData.systolic_pressure_records !== null && (
-            <View className={`${color} p-4 rounded-lg mb-4`}>
-              <Text className={`${textColor} font-semibold text-center`}>
-                Trạng thái huyết áp của bạn:{" "}
-                <Text className="font-bold">{status}</Text>. {advice}
+          <View className="flex-row justify-between items-center">
+            <View className="flex-1">
+              <Text className="text-lg font-bold">
+                Biểu đồ huyết áp tâm trương
               </Text>
             </View>
-          )}
-          {/* Biểu đồ huyết áp tâm thu */}
-          <Text className="text-lg font-bold mb-4">
-            Biểu đồ Huyết áp Tâm thu
-          </Text>
+            <View className="w-40">
+              <SelectField
+                label=""
+                data={displayOptions}
+                value={systolicDisplayOption || ""}
+                placeholder="Kiểu hiển thị"
+                onChange={(val) => setSystolicDisplayOption(val)}
+              />
+            </View>
+          </View>
           <HealthMetricsLineChart healthMetricsLineData={systolicRecords} />
-
-          {/* Biểu đồ huyết áp tâm trương */}
-          <Text className="text-lg font-bold mt-6 mb-4">
-            Biểu đồ Huyết áp Tâm trương
-          </Text>
+        </>
+      )}
+      {/* Biểu đồ height */}
+      {diastolicRecords.length > 0 && (
+        <>
+          <View className="flex-row justify-between items-center">
+            <View className="flex-1">
+              <Text className="text-lg font-bold">
+                Biểu đồ huyết áp tâm thu
+              </Text>
+            </View>
+            <View className="w-40">
+              <SelectField
+                label=""
+                data={displayOptions}
+                value={diastolicDisplayOption || ""}
+                placeholder="Kiểu hiển thị"
+                onChange={(val) => setDiastolicDisplayOption(val)}
+              />
+            </View>
+          </View>
           <HealthMetricsLineChart healthMetricsLineData={diastolicRecords} />
         </>
       )}
 
-      {/* Modal nhập dữ liệu */}
-      <Modal
-        isVisible={modalVisible}
-        animationIn="zoomIn"
-        animationOut="zoomOut"
-        onBackdropPress={() => setModalVisible(false)}
-      >
-        <View className="bg-white rounded-lg p-6">
-          <Text className="text-lg font-bold text-center mb-4">
-            Nhập{" "}
-            {bloodPressureMetrics.find((m) => m.key === selectedMetric)?.label}{" "}
-            ({bloodPressureMetrics.find((m) => m.key === selectedMetric)?.unit})
-          </Text>
-          <View className="flex-row items-center border border-gray-300 p-2 rounded-xl mb-4">
-            <FontAwesome name="pencil" size={20} color="gray" />
-            <TextInput
-              className="ml-3 flex-1"
-              placeholder="Nhập giá trị"
-              value={value}
-              onChangeText={setValue}
-              keyboardType="numeric"
-              inputMode="numeric"
-            />
-          </View>
-          {/* Nút hành động */}
-          <View className="flex-row justify-end gap-4">
-            <TouchableOpacity
-              className="px-4 py-2 bg-gray-100 rounded-full"
-              onPress={() => setModalVisible(false)}
-            >
-              <Text className="text-gray-900">Hủy</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="px-4 py-2 bg-gray-900 rounded-full"
-              onPress={handleSaveData}
-            >
-              <Text className="text-white font-semibold">Lưu</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <HealthDataInputModal
+        isVisible={isChangeSystolic}
+        label={"huyết áp tâm thu"}
+        setModalVisible={setIsChangeSystolic}
+        value={changeSystolicValue}
+        setValue={setChangeSystolicValue}
+        handleSaveData={handleSaveData}
+      />
+
+      <HealthDataInputModal
+        isVisible={isChangeDiastolic}
+        label={"huyết áp tâm trương"}
+        setModalVisible={setIsChangeDiastolic}
+        value={changeDiastolicValue}
+        setValue={setChangeDiastolicValue}
+        handleSaveData={handleSaveData}
+      />
     </ScrollView>
   );
 };
-
 export default BloodPressureScreen;

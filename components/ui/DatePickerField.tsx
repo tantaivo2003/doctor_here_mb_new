@@ -10,6 +10,7 @@ interface DatePickerFieldProps {
   onChange: (date: DateType) => void;
   placeholder?: string;
   label?: string;
+  mode?: string;
   maxDate?: DateType;
   minDate?: DateType;
 }
@@ -19,6 +20,7 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
   onChange,
   placeholder = "DD/MM/YYYY",
   label,
+  mode = "single",
   maxDate,
   minDate,
 }) => {

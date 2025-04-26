@@ -13,8 +13,7 @@ export const fetchFamilyMembers = async (ptID: string) => {
     }
 
     const data = await response.json();
-    // return data;
-    return familyMembers;
+    return data;
   } catch (error) {
     console.error("Lỗi khi gọi API fetchFamilyMembers:", error);
     throw error;
@@ -32,8 +31,7 @@ export const fetchPendingInvites = async (ptID: string) => {
       throw new Error("Lỗi khi lấy danh sách mối quan hệ chưa được xác nhận");
     }
     const data = await response.json();
-    // return data;
-    return mockPendingInvites;
+    return data;
   } catch (error) {
     console.error("Lỗi khi gọi API:", error);
     return [];
@@ -46,7 +44,8 @@ export const updateRelationship = async (
   newRelationship: string
 ) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/ralative/role`, {
+    console.log(`${API_BASE_URL}/api/relative/role`);
+    const response = await fetch(`${API_BASE_URL}/api/relative/role`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -73,7 +72,7 @@ export const updateRelationship = async (
 
 export const confirmRelationship = async (ptID1: string, ptID2: string) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/ralative/confirm`, {
+    const response = await fetch(`${API_BASE_URL}/api/relative/confirm`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

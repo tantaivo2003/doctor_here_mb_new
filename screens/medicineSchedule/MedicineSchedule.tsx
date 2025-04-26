@@ -5,6 +5,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import DateTimePicker, {
   DateType,
   getDefaultStyles,
+  getDefaultClassNames,
 } from "react-native-ui-datepicker";
 
 import dayjs from "dayjs";
@@ -20,15 +21,20 @@ import MedicineItem from "../../components/medicineSchedule/MedicineItem";
 import { getUserID } from "../../services/storage";
 import Toast from "react-native-toast-message";
 
+import { formatDateTime } from "../../utils/formatDateTime";
+
 const MedicineScheduleScreen = () => {
+  const datePickerDefaultClassNames = getDefaultClassNames();
+
   const [medicineIntakes, setMedicineIntakes] = useState<MedicineIntake[]>([]);
   const [selectedMedicine, setSelectedMedicine] =
     useState<MedicineIntake | null>(null);
   const [schedules, setSchedules] = useState<MedicineSchedule[]>([]);
 
-  let today = new Date();
-  const [selectedDay, setSelectedDay] = useState<DateType>(
-    new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const [beginDate, setBeginDate] = useState<DateType>(new Date());
+  // 3 ngày sau ngày bắt đầu
+  const [endDate, setEndDate] = useState<DateType>(
+    dayjs(beginDate).add(3, "day").toDate()
   );
   const [dayPickerModalVisible, setDayPickerModalVisible] = useState(false);
   const [actionModalVisible, setActionModalVisible] = useState(false);
@@ -39,8 +45,11 @@ const MedicineScheduleScreen = () => {
       console.error("Không tìm thấy ID bệnh nhân trong storage.");
       return;
     }
-    const dayStr = dayjs(selectedDay).format("YYYY-MM-DD");
-    const data = await fetchMedicineSchedule(patientId, dayStr, dayStr);
+    const data = await fetchMedicineSchedule(
+      patientId,
+      dayjs(beginDate).format("YYYY-MM-DD"),
+      dayjs(endDate).format("YYYY-MM-DD")
+    );
     setSchedules(data);
     console.log("Lịch trình thuốc:", data);
     setMedicineIntakes(data[0]?.intakes || []);
@@ -48,7 +57,7 @@ const MedicineScheduleScreen = () => {
 
   useEffect(() => {
     loadSchedules();
-  }, [selectedDay]);
+  }, []);
 
   const handleLongPress = (medicine: MedicineIntake) => {
     setSelectedMedicine(medicine);
@@ -97,7 +106,8 @@ const MedicineScheduleScreen = () => {
     <View className="flex-1 bg-white p-4">
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-2xl font-bold">
-          Ngày: {selectedDay ? dayjs(selectedDay).format("DD/MM/YYYY") : null}
+          Ngày: {formatDateTime(beginDate, "date")} đến{" "}
+          {formatDateTime(endDate, "date")}
         </Text>
 
         <TouchableOpacity onPress={() => setDayPickerModalVisible(true)}>
@@ -144,19 +154,53 @@ const MedicineScheduleScreen = () => {
         animationOut="zoomOut"
       >
         <View className="justify-center items-center bg-white p-4 rounded-lg">
-          <DateTimePicker
+          {/* <DateTimePicker
+            classNames={{
+              ...datePickerDefaultClassNames,
+              today: "border-amber-500", // Add a border to today's date
+              selected: "bg-amber-500 border-amber-500", // Highlight the selected day
+              selected_label: "text-white", // Highlight the selected day label
+              day: `${datePickerDefaultClassNames.day} hover:bg-amber-100`, // Change background color on hover
+              disabled: "opacity-50", // Make disabled dates appear more faded
+            }}
             mode="single"
             date={selectedDay}
             onChange={({ date }) => setSelectedDay(date)}
-            styles={{
-              ...getDefaultStyles(),
+            locale="vi"
+          /> */}
+
+          <DateTimePicker
+            classNames={{
+              ...datePickerDefaultClassNames,
+              today: "border-blue-500",
+              range_start: "bg-blue-500 text-white rounded-l-full",
+              range_end: "bg-blue-500 text-white rounded-r-full",
+              range_middle: "bg-blue-100 text-black",
+              range_fill: "bg-blue-100",
+              range_fill_weekstart: "bg-blue-100",
+              range_fill_weekend: "bg-blue-100",
+              selected: "bg-blue-500 border-blue-500",
+              selected_label: "text-white",
+              day: `${datePickerDefaultClassNames.day} hover:bg-blue-50`,
+              disabled: "opacity-50",
+            }}
+            mode="range"
+            startDate={beginDate}
+            endDate={endDate}
+            onChange={({ startDate, endDate }) => {
+              console.log("startDate:", startDate, "endDate:", endDate);
+              setBeginDate(startDate);
+              setEndDate(endDate);
             }}
             locale="vi"
           />
           <View className="flex-row justify-end w-full mt-4">
             <TouchableOpacity
               className="bg-gray-900 px-6 py-3 rounded-full"
-              onPress={() => setDayPickerModalVisible(false)}
+              onPress={() => {
+                loadSchedules();
+                setDayPickerModalVisible(false);
+              }}
             >
               <Text className="text-white font-semibold">Xác nhận</Text>
             </TouchableOpacity>

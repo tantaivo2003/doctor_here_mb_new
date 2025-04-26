@@ -463,7 +463,7 @@ export interface DiagnosisDetail {
 // types/familyTypes.ts
 
 export interface FamilyMember {
-  ma_bn: string;
+  ma_benh_nhan_2: string;
   ten_dang_nhap: string;
   email: string;
   sdt: string;
@@ -477,7 +477,7 @@ export interface FamilyMember {
 
 export const familyMembers: FamilyMember[] = [
   {
-    ma_bn: "BN0000006",
+    ma_benh_nhan_2: "BN0000006",
     ten_dang_nhap: "voanh123",
     email: "voanh@gmail.com",
     sdt: "0909123456",
@@ -489,7 +489,7 @@ export const familyMembers: FamilyMember[] = [
     than_phan: "Vợ",
   },
   {
-    ma_bn: "BN0000007",
+    ma_benh_nhan_2: "BN0000007",
     ten_dang_nhap: "conga123",
     email: "conga@gmail.com",
     sdt: "0909123457",
@@ -501,7 +501,7 @@ export const familyMembers: FamilyMember[] = [
     than_phan: "Con trai",
   },
   {
-    ma_bn: "BN0000008",
+    ma_benh_nhan_2: "BN0000008",
     ten_dang_nhap: "meanh123",
     email: "meanh@gmail.com",
     sdt: "0909123458",

@@ -31,7 +31,9 @@ export const FamilyMemberItem: FC<FamilyMemberItemProps> = ({
 
       {/* Thông tin */}
       <View className="flex-1 ml-3">
-        <Text className="font-semibold text-gray-900">{member.ho_va_ten}</Text>
+        <Text className="text-lg font-semibold text-gray-900">
+          {member.ho_va_ten}
+        </Text>
         <Text className="text-gray-500 text-sm">
           Thân phận: {member.than_phan}
         </Text>

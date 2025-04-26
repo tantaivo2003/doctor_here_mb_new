@@ -21,22 +21,9 @@ const HealthMetricsLineChart: React.FC<HealthMetricsLineChartProps> = ({
 
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Xử lý dữ liệu: Tính trung bình nếu một ngày có nhiều giá trị
-  const groupedData: Record<string, number[]> = {};
-  healthMetricsLineData.forEach(({ date, value }) => {
-    const formattedDate = moment(date).format("DD-MM");
-    if (!groupedData[formattedDate]) {
-      groupedData[formattedDate] = [];
-    }
-    groupedData[formattedDate].push(value);
-  });
-
-  const labels = Object.keys(groupedData);
-  const values = labels.map(
-    (date) =>
-      groupedData[date].reduce((sum, val) => sum + val, 0) /
-      groupedData[date].length
-  );
+  // Sử dụng trực tiếp dữ liệu đã được xử lý bên ngoài
+  const labels = healthMetricsLineData.map(({ date }) => date);
+  const values = healthMetricsLineData.map(({ value }) => value);
 
   const chartWidth = Math.max(
     Dimensions.get("window").width,
@@ -49,8 +36,9 @@ const HealthMetricsLineChart: React.FC<HealthMetricsLineChartProps> = ({
       if (scrollViewRef.current) {
         scrollViewRef.current.scrollToEnd({ animated: true });
       }
-    }, 100); // Delay nhẹ để tránh lỗi render
+    }, 100);
   }, []);
+
   return (
     <ScrollView horizontal ref={scrollViewRef}>
       <View>
@@ -62,8 +50,8 @@ const HealthMetricsLineChart: React.FC<HealthMetricsLineChartProps> = ({
           yAxisSuffix=""
           yAxisInterval={1}
           chartConfig={{
-            backgroundGradientFrom: "#F5F5F5", // Xám nhạt phía trên
-            backgroundGradientTo: "#F5F5F5", // Xám hơi đậm phía dưới
+            backgroundGradientFrom: "#F5F5F5",
+            backgroundGradientTo: "#F5F5F5",
             decimalPlaces: 1,
             color: (opacity = 1) => `rgba(0, 122, 255, ${opacity})`,
             labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
@@ -77,16 +65,17 @@ const HealthMetricsLineChart: React.FC<HealthMetricsLineChartProps> = ({
           style={{ marginVertical: 8, borderRadius: 8 }}
           bezier
           decorator={({ width, height }: { width: number; height: number }) => {
-            const xSpacing = width / (labels.length + 1); // Khoảng cách giữa các điểm
             const yMax = Math.max(...values);
             const yMin = 0;
-            const yScale = (height - 50) / (yMax - yMin || 1); // Tỷ lệ trục Y
+            const yScale = (height - 50) / (yMax - yMin || 1);
+            const xSpacing =
+              width / (labels.length > 1 ? labels.length - 1 : 1);
 
             return (
               <Svg>
                 {values.map((value, index) => {
-                  const x = (index + 1) * xSpacing + 10; // Tọa độ X của điểm
-                  const y = height - (value - yMin) * yScale - 15; // Căn chỉnh trục Y
+                  const x = index * xSpacing;
+                  const y = height - (value - yMin) * yScale + 15; // 👉 phía dưới điểm
 
                   return (
                     <SvgText

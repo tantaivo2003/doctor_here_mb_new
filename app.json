@@ -88,9 +88,17 @@
         "android.permission.health.WRITE_EXERCISE_ROUTE",
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_CONNECT"
       ],
-      "package": "com.tantaivo2003.DoctorHere"
+      "package": "com.tantaivo2003.DoctorHere",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -101,16 +109,8 @@
         "expo-build-properties",
         {
           "android": {
-            "minSdkVersion": 26,
-            "extraProguardRules": "-dontwarn org.webrtc.** -keep class org.webrtc.** { *; } -keep class com.stringee.** { *; }"
+            "minSdkVersion": 26
           }
-        }
-      ],
-      [
-        "expo-android-app-gradle-dependencies",
-        {
-          "spacing": "    ",
-          "dependencies": ["com.android.volley:volley:*.*.*"]
         }
       ]
     ],

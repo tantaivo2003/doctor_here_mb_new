@@ -1,21 +1,66 @@
-import { readRecords, RecordType } from "react-native-health-connect";
+import {
+  readRecords,
+  RecordType,
+  AggregateResult,
+} from "react-native-health-connect";
+import { aggregateGroupByPeriod } from "react-native-health-connect";
+import moment from "moment";
 
+type PeriodType = "DAYS" | "WEEKS" | "MONTHS" | "YEARS";
+
+interface ChartDataPoint {
+  date: string;
+  value: number;
+}
 const processHeightData = (records: any[]) =>
   records.map((record) => ({
     value: record.height.inMeters,
-    date: record.time.split("T")[0], // Lấy ngày từ `time`
+    date: record.time, // Lấy ngày từ `time`
   }));
 
 const processWeightData = (records: any[]) =>
   records.map((record) => ({
     value: record.weight.inKilograms,
-    date: record.time.split("T")[0], // Lấy ngày từ `time`
+    date: record.time, // Lấy ngày từ `time`
+  }));
+
+const processBloodPressureData = (records: any[]) =>
+  records.map((record) => ({
+    systolic: record.systolic.inMillimetersOfMercury,
+    diastolic: record.diastolic.inMillimetersOfMercury,
+    date: record.time, // lấy ngày
+    time: record.time, // thời gian đầy đủ nếu cần
+  }));
+
+const processSystolicData = (records: any[]) =>
+  records.map((record) => ({
+    value: record.systolic.inMillimetersOfMercury,
+    date: record.time, // Lấy ngày từ `time`
+  }));
+const processDiastolicData = (records: any[]) =>
+  records.map((record) => ({
+    value: record.diastolic.inMillimetersOfMercury,
+    date: record.time, // Lấy ngày từ `time`
+  }));
+
+const processHeartRateData = (records: any[]) =>
+  records.map((record) => ({
+    value: record.samples?.[0]?.beatsPerMinute ?? null, // Lấy sample đầu tiên
+    date: record.startTime,
+  }));
+const processRespiratoryRateData = (records: any[]) =>
+  records.map((record) => ({
+    value: record.rate, // số nhịp thở mỗi phút
+    date: record.time,
   }));
 
 export const fetchHealthRecords = async (
   recordType: RecordType,
   startTimeISO: string,
-  endTimeISO: string
+  endTimeISO: string,
+  // this is for systolic and diastolic data
+  isDiastolic?: boolean,
+  isSystolic?: boolean
 ): Promise<any[] | null> => {
   try {
     const result = await readRecords(recordType, {
@@ -31,6 +76,22 @@ export const fetchHealthRecords = async (
     }
     if (recordType === "Weight") {
       return processWeightData(result.records);
+    }
+    if (recordType === "BloodPressure") {
+      if (isSystolic) {
+        return processSystolicData(result.records);
+      }
+      if (isDiastolic) {
+        return processDiastolicData(result.records);
+      }
+      return processBloodPressureData(result.records);
+    }
+
+    if (recordType === "HeartRate") {
+      return processHeartRateData(result.records);
+    }
+    if (recordType === "RespiratoryRate") {
+      return processRespiratoryRateData(result.records);
     }
     console.log(`✅ Retrieved ${recordType} records:`, result.records);
     return result.records;
@@ -68,10 +129,128 @@ export const fetchLatestHealthRecord = async (
       const latestRecord = listRecords[listRecords.length - 1];
       return latestRecord;
     }
+
+    if (recordType === "BloodPressure") {
+      const listRecords = processBloodPressureData(result.records);
+      const latestRecord = listRecords[listRecords.length - 1];
+      return latestRecord;
+    }
+    if (recordType === "HeartRate") {
+      const listRecords = processHeartRateData(result.records);
+      return listRecords[listRecords.length - 1];
+    }
+    if (recordType === "RespiratoryRate") {
+      const listRecords = processRespiratoryRateData(result.records);
+      return listRecords[listRecords.length - 1];
+    }
+
     console.log(`✅ Retrieved ${recordType} records:`, result.records);
     return result.records;
   } catch (error) {
     console.error(`❌ Error getting latest ${recordType} record:`, error);
     return null;
+  }
+};
+
+export const getTodayHealthRecord = async (
+  recordType: string
+): Promise<number> => {
+  try {
+    const now = new Date();
+    const start = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - 1,
+      0,
+      0,
+      0
+    );
+    const end = now;
+
+    const result = await aggregateGroupByPeriod({
+      recordType,
+      timeRangeFilter: {
+        operator: "between",
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+      },
+      timeRangeSlicer: {
+        period: "DAYS",
+        length: 1,
+      },
+    });
+    const data = result?.[0]?.result;
+
+    if (recordType === "Steps") {
+      const steps = data?.COUNT_TOTAL;
+      return typeof steps === "number" ? steps : 0;
+    } else if (recordType === "Distance") {
+      const distance = data?.DISTANCE?.inMeters;
+      return typeof distance === "number" ? distance : 0;
+    }
+
+    // Nếu không khớp recordType nào đã định nghĩa
+    return 0;
+  } catch (error) {
+    console.error("🚨 Lỗi khi lấy dữ liệu ngày hôm nay:", error);
+    return 0;
+  }
+};
+
+export const getActivityRecord = async (
+  recordType: "Steps" | "Distance",
+  startTimeISO: string,
+  endTimeISO: string,
+  period: PeriodType
+): Promise<{ date: string; value: number }[]> => {
+  try {
+    const result = await aggregateGroupByPeriod({
+      recordType,
+      timeRangeFilter: {
+        operator: "between",
+        startTime: startTimeISO,
+        endTime: endTimeISO,
+      },
+      timeRangeSlicer: {
+        period: period,
+        length: 1,
+      },
+    });
+
+    const formatted = result.map((item: any) => {
+      let dateStr = "";
+
+      switch (period) {
+        case "DAYS":
+          dateStr = moment(item.startTime).format("YYYY-MM-DD");
+          break;
+        case "WEEKS":
+          dateStr = moment(item.startTime).format("YYYY-[W]WW");
+          break;
+        case "MONTHS":
+          dateStr = moment(item.startTime).format("YYYY-MM");
+          break;
+        case "YEARS":
+          dateStr = moment(item.startTime).format("YYYY");
+          break;
+      }
+
+      let value = 0;
+      if (recordType === "Steps") {
+        value = item.result?.COUNT_TOTAL ?? 0;
+      } else if (recordType === "Distance") {
+        value = item.result?.DISTANCE?.inMeters ?? 0;
+      }
+
+      return {
+        date: dateStr,
+        value,
+      };
+    });
+
+    return formatted;
+  } catch (error) {
+    console.error("🚨 Lỗi khi lấy dữ liệu hoạt động:", error);
+    return [];
   }
 };

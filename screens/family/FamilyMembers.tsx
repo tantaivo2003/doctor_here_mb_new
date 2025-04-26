@@ -46,28 +46,26 @@ const FamilyMembers = ({ navigation }: any) => {
   const [changeRoleModalVisible, setChangeRoleModalVisible] = useState(false);
   const [confirmRalativeModalVisible, setConfirmRalativeModalVisible] =
     useState(false);
-
-  useEffect(() => {
-    const getFamilyData = async () => {
-      try {
-        const ptID = await getUserID();
-        if (!ptID) {
-          console.log("Không tìm thấy ID người dùng trong bộ nhớ.");
-          return;
-        }
-
-        const data = await fetchFamilyMembers(ptID);
-        setMembers(data);
-
-        const pendingData = await fetchPendingInvites(ptID);
-        setPendingInvites(pendingData);
-      } catch (err) {
-        console.log("Lỗi khi lấy danh sách thành viên:", err);
-      } finally {
-        setLoading(false);
+  const getFamilyData = async () => {
+    try {
+      const ptID = await getUserID();
+      if (!ptID) {
+        console.log("Không tìm thấy ID người dùng trong bộ nhớ.");
+        return;
       }
-    };
 
+      const data = await fetchFamilyMembers(ptID);
+      setMembers(data);
+
+      const pendingData = await fetchPendingInvites(ptID);
+      setPendingInvites(pendingData);
+    } catch (err) {
+      console.log("Lỗi khi lấy danh sách thành viên:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
     getFamilyData();
   }, []);
 
@@ -86,8 +84,14 @@ const FamilyMembers = ({ navigation }: any) => {
     setLoadingModalVisible(true);
     try {
       const pID = await getUserID();
-      console.log("API: ", pID, selectedMember?.ma_bn, seletedRole);
-      // const result = await updateRelationship("BN0000006", "BN0000007", "Bố con");
+      console.log("API: ", pID, selectedMember?.ma_benh_nhan_2, seletedRole);
+
+      const result = await updateRelationship(
+        pID,
+        selectedMember?.ma_benh_nhan_2,
+        seletedRole
+      );
+      getFamilyData();
       Toast.show({
         type: "success",
         text1: "Thành công",
@@ -115,8 +119,20 @@ const FamilyMembers = ({ navigation }: any) => {
     try {
       const ptID = await getUserID();
       console.log("API: ", ptID, selectedPending?.ma_benh_nhan_1);
-      // const result = await confirmRelationship(ptID, selectedPending?.ma_benh_nhan_1);
 
+      if (!ptID || !selectedPending) {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: "Có lỗi xảy ra khi cập nhật mối quan hệ.",
+        });
+        return;
+      }
+      const result = await confirmRelationship(
+        ptID,
+        selectedPending?.ma_benh_nhan_1
+      );
+      getFamilyData();
       Toast.show({
         type: "success",
         text1: "Thành công",
@@ -147,7 +163,10 @@ const FamilyMembers = ({ navigation }: any) => {
           <Text className="text-lg font-bold mb-2">Thành viên</Text>
           {members.length > 0 ? (
             members.map((item) => (
-              <View className="flex-row items-center mb-2" key={item.ma_bn}>
+              <View
+                className="flex-row items-center mb-2"
+                key={item.ma_benh_nhan_2}
+              >
                 <FamilyMemberItem
                   member={item}
                   onPress={() => handlePressMember(item)}

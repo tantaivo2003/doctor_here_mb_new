@@ -37,12 +37,9 @@ export const BLOOD_PRESSURE_PERMISSIONS: Permission[] = [
   { accessType: "write", recordType: "BloodPressure" },
 ];
 
-export const HEART_RATE_PERMISSIONS: Permission[] = [
+export const HEART_SCREEN_PERMISSIONS: Permission[] = [
   { accessType: "read", recordType: "HeartRate" },
   { accessType: "write", recordType: "HeartRate" },
-];
-
-export const RESPIRATORY_RATE_PERMISSIONS: Permission[] = [
   { accessType: "read", recordType: "RespiratoryRate" },
   { accessType: "write", recordType: "RespiratoryRate" },
 ];
