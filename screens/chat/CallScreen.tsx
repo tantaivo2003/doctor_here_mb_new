@@ -205,8 +205,8 @@ const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
   return (
     <StreamCall call={call}>
       <View className="flex-1 bg-white justify-center">
+        {/* <CallContent onHangupCallHandler={navigation.goBack()} /> */}
         <CallContent CallControls={CustomCallControls} />
-
         {/* Modal thông báo */}
         <NotificationModal
           visible={notificationVisible}
@@ -214,7 +214,6 @@ const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
           message={notificationMessage}
           onClose={() => setNotificationVisible(false)}
         />
-
         {/* Modal gia hạn */}
         <Modal
           isVisible={modalVisible}

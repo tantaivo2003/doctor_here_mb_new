@@ -268,7 +268,9 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
         <Text className="ml-3 font-bold text-lg">BS. Trung Hiếu</Text>
         <TouchableOpacity
           className="ml-auto"
-          onPress={() => navigation.navigate("VideoCallScreen", { doctorID })}
+          onPress={() => {
+            navigation.navigate("VideoCallScreen", { doctorID });
+          }}
         >
           <Ionicons name="call-outline" size={24} color="black" />
         </TouchableOpacity>

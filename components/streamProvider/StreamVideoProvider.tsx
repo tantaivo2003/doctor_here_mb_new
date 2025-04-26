@@ -18,9 +18,10 @@ const StreamVideoProvider = ({ children }: { children: React.ReactNode }) => {
     const init = async () => {
       // const userId = await getUserID();
       const userId = "BN0000006";
+
       const token = await AsyncStorage.getItem("stream_token");
       const apiKey = await AsyncStorage.getItem("stream_api_key");
-      const username = await getUsername();
+      const username = "nguoidung1";
 
       console.log("User ID:", userId);
 

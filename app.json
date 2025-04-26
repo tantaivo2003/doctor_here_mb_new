@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Doctor Here",
+    "name": "Doctor Here v2",
     "slug": "Doctor-Here",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -109,7 +109,8 @@
         "expo-build-properties",
         {
           "android": {
-            "minSdkVersion": 26
+            "minSdkVersion": 26,
+            "extraProguardRules": "-dontwarn org.webrtc.** -keep class org.webrtc.** { *; } -keep class com.stringee.** { *; }"
           }
         }
       ]

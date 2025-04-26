@@ -1,7 +1,6 @@
 import ChatListScreen from "./ChatListScreen";
 import ChatDetailScreen from "./ChatDetailScreen";
 import VideoCallScreen from "./CallScreen";
-import CallPage from "./CallPage";
 import { createStackNavigator } from "@react-navigation/stack";
 
 const Stack = createStackNavigator();
