@@ -2,6 +2,7 @@ import { useLayoutEffect } from "react";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import MemberDiagnosisList from "./MemberDiagnosisList";
 import MemberMedicineSchedule from "./MemberMedicineSchedule";
+import MemberMedicineScheduleDetail from "./MemberMSDetail";
 const Tab = createMaterialTopTabNavigator();
 
 export default function MemberDetailNav({ navigation, route }: any) {
@@ -28,7 +29,9 @@ export default function MemberDetailNav({ navigation, route }: any) {
       />
       <Tab.Screen
         name="Lịch uống thuốc"
-        children={() => <MemberMedicineSchedule />}
+        children={() => (
+          <MemberMedicineSchedule member={member} navigation={navigation} />
+        )}
       />
     </Tab.Navigator>
   );

@@ -1,8 +1,12 @@
 import { insertRecords } from "react-native-health-connect";
 
-export const insertHealthRecord = async (recordType: string, value: any) => {
-  const now = new Date();
-  const isoTime = now.toISOString();
+export const insertHealthRecord = async (
+  recordType: string,
+  value: any,
+  isoTime: string
+) => {
+  // const now = new Date();
+  // const isoTime = now.toISOString();
 
   let record: any;
 
@@ -52,6 +56,21 @@ export const insertHealthRecord = async (recordType: string, value: any) => {
         time: isoTime,
         rate: parseFloat(value),
         // Có thể thêm zoneOffset nếu cần
+      };
+      break;
+    case "BloodGlucose":
+      record = {
+        recordType: "BloodGlucose",
+        time: isoTime,
+        level: { value: parseFloat(value), unit: "mg/dL" },
+      };
+      break;
+
+    case "OxygenSaturation":
+      record = {
+        recordType: "OxygenSaturation",
+        time: isoTime,
+        percentage: parseFloat(value),
       };
       break;
 

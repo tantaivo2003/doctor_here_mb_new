@@ -41,7 +41,6 @@ interface Message {
 const API_BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 const ChatListScreen: FC = ({ navigation }: any) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const userID = "BN0000006"; // Thay thế bằng ID người dùng thực tế
 
   // useEffect(() => {
   //   console.log("Lắng nghe tin nhắn từ socket");
@@ -91,65 +90,96 @@ const ChatListScreen: FC = ({ navigation }: any) => {
   const handlePressMessage = (
     convID: number,
     doctorAvtUrl: string,
-    doctorID: string
+    doctorID: string,
+    doctorName: string
   ) => {
     console.log("Đi tới chat với ID: ", convID);
-    navigation.navigate("ChatDetailScreen", { convID, doctorAvtUrl, doctorID });
+    navigation.navigate("ChatDetailScreen", {
+      convID,
+      doctorAvtUrl,
+      doctorID,
+      doctorName,
+    });
   };
 
   useFocusEffect(
     React.useCallback(() => {
-      console.log("LẮNG nghe tin nhắn từ socket");
-      const handleMessage = (message: string) => {
-        const parsedMessage: Message = JSON.parse(message);
-        console.log("Tin nhắn mới từ socket", parsedMessage);
+      let isActive = true;
 
-        setConversations((prevConversations) => {
-          const updated = prevConversations.map((conversation) => {
-            if (conversation.cuoc_hoi_thoai === parsedMessage.cuoc_hoi_thoai) {
-              return {
-                ...conversation,
-                so_tin_moi: conversation.so_tin_moi + 1,
-                thoi_diem_tin_nhan_cuoi: parsedMessage.thoi_diem_gui,
-                tin_nhan: {
-                  noi_dung_van_ban: parsedMessage.noi_dung_van_ban,
-                  media_url: parsedMessage.media_url,
-                },
-              };
-            }
-            return conversation;
+      const setup = async () => {
+        console.log("LẮNG nghe tin nhắn từ socket");
+
+        const userID = await getUserID();
+
+        const handleMessage = (message: string) => {
+          const parsedMessage: Message = JSON.parse(message);
+          console.log("Tin nhắn mới từ socket", parsedMessage);
+
+          if (!isActive) return;
+
+          setConversations((prevConversations) => {
+            const updated = prevConversations.map((conversation) => {
+              if (
+                conversation.cuoc_hoi_thoai === parsedMessage.cuoc_hoi_thoai
+              ) {
+                return {
+                  ...conversation,
+                  so_tin_moi: conversation.so_tin_moi + 1,
+                  thoi_diem_tin_nhan_cuoi: parsedMessage.thoi_diem_gui,
+                  tin_nhan: {
+                    noi_dung_van_ban: parsedMessage.noi_dung_van_ban,
+                    media_url: parsedMessage.media_url,
+                  },
+                };
+              }
+              return conversation;
+            });
+            return updated;
           });
-          return updated;
-        });
+        };
+
+        socket.on("chat_message", handleMessage);
+
+        console.log("Màn hình ChatListScreen đã được focus");
+        try {
+          const res = await fetch(
+            `${API_BASE_URL}/api/conversation/user/${userID}`
+          );
+          const data = await res.json();
+          if (isActive) {
+            console.log("Lấy danh sách trò chuyện", data);
+            setConversations(data);
+          }
+        } catch (error) {
+          console.error("Lỗi khi lấy danh sách trò chuyện:", error);
+        }
+
+        return () => {
+          socket.off("chat_message", handleMessage);
+          console.log("ChatListScreen bị blur, gỡ socket listener");
+        };
       };
 
-      socket.on("chat_message", handleMessage); // Bắt sự kiện mỗi khi màn hình focus
-
-      console.log("Màn hình ChatListScreen đã được focus");
-      fetch(`${API_BASE_URL}/api/conversation/user/${userID}`)
-        .then((res) => res.json())
-        .then((data) => {
-          console.log("Lấy danh sách trò chuyện", data);
-          setConversations(data);
-        });
+      setup();
 
       return () => {
-        console.log("ChatListScreen bị blur, gỡ socket listener");
-        socket.off("chat_message", handleMessage); // Gỡ đúng handler
+        isActive = false;
       };
-    }, [userID])
+    }, [])
   );
 
   return (
     <View className="flex-1 bg-white px-4 pt-4">
       {/* Danh sách tin nhắn */}
       <FlatList
-        data={conversations}
+        data={[...conversations].sort(
+          (a, b) =>
+            new Date(b.thoi_diem_tin_nhan_cuoi).getTime() -
+            new Date(a.thoi_diem_tin_nhan_cuoi).getTime()
+        )}
         keyExtractor={(item) => item.cuoc_hoi_thoai.toString()}
         renderItem={({ item }) => (
           <ChatListItem
-            // doctor={item}
-            // onPress={() => handlePressMessage(item.id)}
             doctor={{
               id: item.cuoc_hoi_thoai,
               name: item.nguoi_dung.ho_va_ten,
@@ -166,13 +196,14 @@ const ChatListScreen: FC = ({ navigation }: any) => {
                   minute: "2-digit",
                 }
               ),
-              isOnline: false, // Replace with actual online status if available
+              isOnline: false,
             }}
             onPress={() =>
               handlePressMessage(
                 item.cuoc_hoi_thoai,
                 item.nguoi_dung.avt_url || "",
-                item.nguoi_dung.ma
+                item.nguoi_dung.ma,
+                item.nguoi_dung.ho_va_ten
               )
             }
           />

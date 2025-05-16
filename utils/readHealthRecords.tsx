@@ -54,6 +54,33 @@ const processRespiratoryRateData = (records: any[]) =>
     date: record.time,
   }));
 
+const processStepsData = (records: any[]) =>
+  records.map((record) => ({
+    value: record.count,
+    date: record.startTime,
+  }));
+
+const processDistanceData = (records: any[]) =>
+  records.map((record) => ({
+    value: record.distance.inMeters,
+    date: record.startTime,
+  }));
+
+const processBloodGlucoseData = (records: any[]) =>
+  records.map((record) => ({
+    value: record.level.inMilligramsPerDeciliter, // hoặc .millimolesPerLiter nếu bạn muốn đổi đơn vị
+    date: record.time,
+    // specimenSource: record.specimenSource, // máu mao mạch, tĩnh mạch, v.v.
+    // mealType: record.mealType, // ăn sáng, ăn trưa, v.v.
+    // relationToMeal: record.relationToMeal, // trước/sau bữa ăn
+  }));
+
+const processOxygenSaturationData = (records: any[]) =>
+  records.map((record) => ({
+    value: record.percentage,
+    date: record.time,
+  }));
+
 export const fetchHealthRecords = async (
   recordType: RecordType,
   startTimeISO: string,
@@ -92,6 +119,18 @@ export const fetchHealthRecords = async (
     }
     if (recordType === "RespiratoryRate") {
       return processRespiratoryRateData(result.records);
+    }
+    if (recordType === "Steps") {
+      return processStepsData(result.records);
+    }
+    if (recordType === "Distance") {
+      return processDistanceData(result.records);
+    }
+    if (recordType === "BloodGlucose") {
+      return processBloodGlucoseData(result.records);
+    }
+    if (recordType === "OxygenSaturation") {
+      return processOxygenSaturationData(result.records);
     }
     console.log(`✅ Retrieved ${recordType} records:`, result.records);
     return result.records;
@@ -143,7 +182,12 @@ export const fetchLatestHealthRecord = async (
       const listRecords = processRespiratoryRateData(result.records);
       return listRecords[listRecords.length - 1];
     }
-
+    if (recordType === "BloodGlucose") {
+      return processBloodGlucoseData(result.records);
+    }
+    if (recordType === "OxygenSaturation") {
+      return processOxygenSaturationData(result.records);
+    }
     console.log(`✅ Retrieved ${recordType} records:`, result.records);
     return result.records;
   } catch (error) {
@@ -212,30 +256,14 @@ export const getActivityRecord = async (
         endTime: endTimeISO,
       },
       timeRangeSlicer: {
-        period: period,
+        period,
         length: 1,
       },
     });
 
     const formatted = result.map((item: any) => {
-      let dateStr = "";
-
-      switch (period) {
-        case "DAYS":
-          dateStr = moment(item.startTime).format("YYYY-MM-DD");
-          break;
-        case "WEEKS":
-          dateStr = moment(item.startTime).format("YYYY-[W]WW");
-          break;
-        case "MONTHS":
-          dateStr = moment(item.startTime).format("YYYY-MM");
-          break;
-        case "YEARS":
-          dateStr = moment(item.startTime).format("YYYY");
-          break;
-      }
-
       let value = 0;
+
       if (recordType === "Steps") {
         value = item.result?.COUNT_TOTAL ?? 0;
       } else if (recordType === "Distance") {
@@ -243,7 +271,8 @@ export const getActivityRecord = async (
       }
 
       return {
-        date: dateStr,
+        // Ép thời gian về đầu ngày (00:00) để tránh chênh lệch
+        date: moment(item.startTime).startOf("day").toISOString(),
         value,
       };
     });

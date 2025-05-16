@@ -13,7 +13,7 @@ const HealthMetricsLineChart: React.FC<HealthMetricsLineChartProps> = ({
 }) => {
   if (!healthMetricsLineData || healthMetricsLineData.length === 0) {
     return (
-      <View className="items-center justify-center">
+      <View className="items-center justify-center my-10">
         <Text className="text-gray-500">Không có dữ liệu</Text>
       </View>
     );
@@ -45,7 +45,7 @@ const HealthMetricsLineChart: React.FC<HealthMetricsLineChartProps> = ({
         <LineChart
           data={{ labels, datasets: [{ data: values }] }}
           width={chartWidth}
-          height={250}
+          height={300}
           fromZero={true}
           yAxisSuffix=""
           yAxisInterval={1}
@@ -62,37 +62,34 @@ const HealthMetricsLineChart: React.FC<HealthMetricsLineChartProps> = ({
               stroke: "#007AFF",
             },
           }}
-          style={{ marginVertical: 8, borderRadius: 8 }}
-          bezier
-          decorator={({ width, height }: { width: number; height: number }) => {
-            const yMax = Math.max(...values);
-            const yMin = 0;
-            const yScale = (height - 50) / (yMax - yMin || 1);
-            const xSpacing =
-              width / (labels.length > 1 ? labels.length - 1 : 1);
-
-            return (
-              <Svg>
-                {values.map((value, index) => {
-                  const x = index * xSpacing;
-                  const y = height - (value - yMin) * yScale + 15; // 👉 phía dưới điểm
-
-                  return (
-                    <SvgText
-                      key={index}
-                      x={x}
-                      y={y}
-                      fill="black"
-                      fontSize="10"
-                      textAnchor="middle"
-                    >
-                      {value.toFixed(1)}
-                    </SvgText>
-                  );
-                })}
-              </Svg>
-            );
+          style={{
+            marginVertical: 16,
+            borderRadius: 8,
           }}
+          bezier
+          onDataPointClick={(data) => {
+            console.log("Tọa độ điểm đã click:", data.x, data.y);
+            console.log("Giá trị điểm:", data.value);
+            console.log("Index điểm:", data.index);
+          }}
+          renderDotContent={({ x, y, index, indexData }) => (
+            <View
+              key={index}
+              style={{
+                position: "absolute",
+                left: x + 10,
+                top: y - 18,
+                backgroundColor: "rgba(0, 0, 0, 0.6)",
+                borderRadius: 6,
+                paddingVertical: 2,
+                paddingHorizontal: 4,
+              }}
+            >
+              <Text style={{ color: "#fff", fontSize: 10 }}>
+                {indexData.toFixed(2)}
+              </Text>
+            </View>
+          )}
         />
       </View>
     </ScrollView>

@@ -22,19 +22,16 @@ interface MessageItemProps {
     content: string | string[];
     timestamp: string; // ISO date string
   };
-  previousDate: string | null; // Lưu trữ ngày của tin nhắn trước đó để so sánh
+  showDate: boolean;
   onImagePress: (imageUri: string) => void; // Hàm để xử lý khi nhấn vào hình ảnh
 }
 
 export const MessageItem: FC<MessageItemProps> = ({
   message,
-  previousDate,
+  showDate,
   onImagePress,
 }) => {
   const messageDate = formatDate(message.timestamp); // Lấy ngày của tin nhắn hiện tại
-
-  // Hiển thị ngày nếu ngày hiện tại khác với ngày tin nhắn trước đó
-  const showDate = previousDate !== messageDate;
 
   return (
     <View>

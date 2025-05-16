@@ -11,70 +11,52 @@ import { FC, useEffect, useState, useRef, useLayoutEffect } from "react";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { messagesList, Message } from "../../types/types";
 import { MessageItem } from "../../components/chat/MessageItem";
-import socket, { sendMessage, onMessageReceived } from "../../socket"; // Hàm WebSocket được export từ socket.ts
+import socket, { sendMessage, onMessageReceived } from "../../socket";
 import { set } from "date-fns";
-import * as ImagePicker from "expo-image-picker"; // Thêm thư viện chọn ảnh
+import * as ImagePicker from "expo-image-picker";
 import { InteractionManager } from "react-native";
+import {
+  fetchMessagesByConversationID,
+  markMessagesAsSeen,
+  createConversation,
+} from "../../api/Message";
+import Toast from "react-native-toast-message";
 
 const ChatDetailScreen: FC = ({ route, navigation }: any) => {
-  const flatListRef = useRef<FlatList>(null); // Tạo tham chiếu đến FlatList
+  const flatListRef = useRef<FlatList>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [files, setFiles] = useState<any[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const { convID, doctorAvtUrl, doctorID } = route.params;
+  const { convID, doctorAvtUrl, doctorID, doctorName } = route.params;
+  const [conversationID, setConversationID] = useState<string | null>(
+    convID || null
+  );
+
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [initialScrollDone, setInitialScrollDone] = useState(false); // Biến để kiểm tra lần đầu cuộn xuống cuối danh sách
-  let userID = "BN0000006"; // ID người bệnh (lấy từ context hoặc dữ liệu người dùng đã đăng nhập)
-  console.log(doctorID);
+  let userID = "BN0000006";
 
   const API_BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 
   // Lấy danh sách tin nhắn từ API
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/message/conversation/${convID}`)
-      .then((res) => res.json())
-      .then((data) => {
-        let formattedData: Message[] = data.map((item: any) => {
-          return {
-            id: item.id,
-            sender: item.ben_gui_di,
-            type: item.kieu_noi_dung,
-            content:
-              item.kieu_noi_dung === "text"
-                ? item.noi_dung_van_ban
-                : item.media_url,
-            timestamp: item.thoi_diem_gui, //"thoi_diem_gui": "2025-03-23T16:27:52.288Z"
-          };
-        });
-        setMessages(formattedData);
+    const loadMessages = async () => {
+      if (!conversationID) return;
+      const data = await fetchMessagesByConversationID(conversationID);
+      setMessages(data);
+    };
 
-        // InteractionManager.runAfterInteractions(() => {
-        //   flatListRef.current?.scrollToEnd({ animated: false });
-        // });
-      });
-  }, [convID]);
+    loadMessages();
+  }, [conversationID]);
 
   // Coi tin nhắn
   useEffect(() => {
-    fetch(
-      `${API_BASE_URL}/api/message/seen/conversation/${convID}/user/${userID}`,
-      {
-        method: "PATCH",
-      }
-    )
-      .then((res) => {
-        if (res.ok) {
-          console.log("Đánh dấu tin nhắn là đã xem thành công");
-        } else {
-          throw new Error("Đánh dấu tin nhắn là đã xem thất bại");
-        }
-      })
-      .catch((error) => {
-        console.error("Lỗi khi gửi yêu cầu:", error);
-      });
-  }, [convID]);
+    if (conversationID && userID) {
+      markMessagesAsSeen(conversationID, userID);
+    }
+  }, [conversationID]);
 
   // Khi nhận tin
   useEffect(() => {
@@ -113,15 +95,15 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
   }, []); // Chỉ chạy một lần khi component mount
 
   // Scroll xuống cuối khi mount lần đầu
-  useEffect(() => {
-    if (messages.length > 0 && !initialScrollDone) {
-      // Đợi FlatList render xong
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: false });
-        setInitialScrollDone(true);
-      }, 1000); // Hoặc 0 nếu nội dung ít
-    }
-  }, [messages]);
+  // useEffect(() => {
+  //   if (messages.length > 0 && !initialScrollDone) {
+  //     // Đợi FlatList render xong
+  //     setTimeout(() => {
+  //       flatListRef.current?.scrollToEnd({ animated: false });
+  //       setInitialScrollDone(true);
+  //     }, 1000); // Hoặc 0 nếu nội dung ít
+  //   }
+  // }, [messages]);
 
   const handleScroll = (e: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
@@ -156,8 +138,35 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
   };
 
   // Hàm gửi tin nhắn
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputText.trim() === "" && files.length === 0) return; // Nếu không có nội dung hoặc file, không gửi
+    // Nếu chưa có convID thì tạo mới
+    let currentConvID = conversationID;
+    if (!currentConvID) {
+      try {
+        const newConversation = await createConversation(
+          userID,
+          doctorID || ""
+        );
+        if (newConversation?.id) {
+          setConversationID(newConversation.id);
+          currentConvID = newConversation.id;
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Lỗi",
+            text2: "Lỗi khi tạo cuộc trò chuyện.",
+          });
+        }
+      } catch (err) {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: "Lỗi khi tạo cuộc trò chuyện.",
+        });
+        return;
+      }
+    }
 
     let time = new Date().toISOString();
     let message = {
@@ -187,7 +196,7 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
         .then((data) => {
           data.forEach((file: any) => {
             sendMessage(
-              userID, // ID người bệnh (lấy từ context hoặc dữ liệu người dùng đã đăng nhập)
+              userID,
               doctorID || "",
               inputText,
               time,
@@ -226,14 +235,19 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
   };
 
   const renderItem = ({ item, index }: { item: Message; index: number }) => {
+    const currentDate = formatDate(item.timestamp);
     const previousDate =
-      index > 0 ? formatDate(messages[index - 1].timestamp) : null;
+      index > 0
+        ? formatDate(messages[messages.length - 1 - (index - 1)].timestamp)
+        : null;
+
+    const showDate = currentDate !== previousDate;
 
     return (
       <MessageItem
         message={item}
-        previousDate={previousDate} // Truyền ngày tin nhắn trước đó để hiển thị ngày khi có sự thay đổi
-        onImagePress={() => handleImagePress(item.content)} // Truyền hàm xử lý nhấn vào hình ảnh
+        showDate={showDate} // Chỉ truyền true nếu ngày khác ngày trước đó
+        onImagePress={() => handleImagePress(item.content)}
       />
     );
   };
@@ -251,7 +265,7 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
   };
 
   return (
-    <View className="flex-1 bg-gray-100 pt-16">
+    <View className="flex-1 bg-gray-100">
       {/* Header */}
       <View className="flex-row items-center p-3 bg-white border-b border-gray-300">
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -259,36 +273,57 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
         </TouchableOpacity>
         <Image
           source={
-            doctorAvtUrl !== ""
+            doctorAvtUrl
               ? { uri: doctorAvtUrl }
-              : require("../../assets/doctor_picture/jessica.png")
+              : require("../../assets/avatar-placeholder.png")
           }
           className="w-10 h-10 rounded-full ml-3"
         />
-        <Text className="ml-3 font-bold text-lg">BS. Trung Hiếu</Text>
-        <TouchableOpacity
+        <Text className="ml-3 font-bold text-lg">BS. {doctorName}</Text>
+        {/* <TouchableOpacity
           className="ml-auto"
           onPress={() => {
             navigation.navigate("VideoCallScreen", { doctorID });
           }}
         >
           <Ionicons name="call-outline" size={24} color="black" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {/* Danh sách tin nhắn */}
+      {messages.length === 0 && (
+        <View className="flex-1 justify-center items-center px-4">
+          <View className="items-center">
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={100}
+              color="#9CA3AF"
+            />
+            <Text className="text-xl font-semibold text-gray-700 mt-6 mb-2">
+              Chưa có tin nhắn nào
+            </Text>
+            <Text className="text-base text-gray-500 text-center">
+              Bắt đầu trò chuyện để kết nối với bác sĩ và nhận tư vấn sức khỏe.
+            </Text>
+          </View>
+        </View>
+      )}
       <FlatList
         ref={flatListRef}
-        data={messages}
+        data={messages.slice().reverse()} // đảo ngược mảng để hiển thị tin nhắn mới ở cuối
         keyExtractor={(item) => item.id.toString()}
-        renderItem={renderItem} // Sử dụng renderItem để hiển thị từng MessageItem
+        renderItem={renderItem}
         className="flex-1"
         onScroll={handleScroll}
         onContentSizeChange={handleContentSizeChange}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingBottom: 12 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: "flex-end", // Đẩy nội dung về cuối
+          paddingBottom: 12,
+        }}
+        inverted // Lật danh sách để tin nhắn mới hiển thị ở dưới cùng
       />
-
       {/* Hiển thị tên file đã chọn */}
       {files.length > 0 && (
         <View>

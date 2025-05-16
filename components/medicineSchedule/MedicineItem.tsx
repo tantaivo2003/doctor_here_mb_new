@@ -1,42 +1,65 @@
-import { View, Text, FlatList, Image, TouchableOpacity } from "react-native";
-import { MedicineIntake } from "../../types/types";
+import { View, Text, Pressable, TouchableOpacity } from "react-native";
+import { MedicineScheduleIntake } from "../../types/types";
+import { FontAwesome } from "@expo/vector-icons";
 import dayjs from "dayjs";
+
+const periodBackgroundColors: Record<string, string> = {
+  Sáng: "bg-yellow-100",
+  Trưa: "bg-green-100",
+  Chiều: "bg-orange-100",
+  Tối: "bg-purple-100",
+};
 
 const MedicineItem = ({
   medicine,
   onPress,
+  onExpand,
+  showDivider = true, // nhận thêm prop
 }: {
-  medicine: MedicineIntake;
-  onPress?: (medicine: MedicineIntake) => void;
+  medicine: MedicineScheduleIntake;
+  onPress?: () => void;
+  onExpand?: (medicine: MedicineScheduleIntake) => void;
+  showDivider?: boolean;
 }) => {
   const taken = medicine.takenAt !== null;
-
+  const intakeTime = `${medicine.time.slice(0, 5)}`;
+  const takenAtTime = medicine.takenAt
+    ? dayjs(medicine.takenAt).format("HH:mm")
+    : "";
+  const backgroundColor = periodBackgroundColors[medicine.period] || "bg-white";
   return (
-    <TouchableOpacity onPress={() => onPress?.(medicine)} disabled={!onPress}>
+    <TouchableOpacity
+      onPress={onPress}
+      className={`flex-row items-center py-3 px-4 rounded-lg mb-2 ${backgroundColor}`}
+    >
+      {/* Dấu chấm tròn */}
       <View
-        className={`flex-row items-center p-3 my-2 rounded-lg ${
-          taken ? "bg-green-100" : "bg-white border border-gray-300"
+        className={`w-8 h-8 rounded-full mr-3 ${
+          taken ? "bg-green-500" : "bg-orange-400"
         }`}
-      >
-        {/* Tạm thời dùng ảnh thuốc mặc định */}
-        <Image
-          source={require("../../assets/medicine.png")}
-          className="w-14 h-14 rounded-lg"
-        />
-        <View className="ml-3">
-          <Text className="font-bold text-base">
-            {medicine.period} lúc {medicine.time.slice(0, 5)}
-          </Text>
-          <Text className="text-gray-600 text-sm">Ngày: {medicine.date}</Text>
+      />
+
+      {/* Nội dung */}
+      <View className="flex-1">
+        <Text className="font-bold text-base">{intakeTime}</Text>
+        <Text className="text-gray-700">{medicine.prescriptionName}</Text>
+        {taken && (
           <Text className="text-gray-500 text-xs italic">
-            {taken
-              ? `Đã uống lúc ${new Date(medicine.takenAt!)
-                  .toLocaleTimeString()
-                  .slice(0, 5)} `
-              : "Chưa uống"}
+            Uống lúc {takenAtTime}
           </Text>
-        </View>
+        )}
       </View>
+
+      {/* Nút mở rộng */}
+      {onExpand && (
+        <Pressable
+          onPress={() => onExpand(medicine)}
+          android_ripple={{ color: "#ccc", borderless: true }}
+          className="p-2 rounded-full"
+        >
+          <FontAwesome name="ellipsis-v" size={20} color="#555" />
+        </Pressable>
+      )}
     </TouchableOpacity>
   );
 };

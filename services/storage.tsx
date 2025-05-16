@@ -349,6 +349,26 @@ export const generateAndStoreFakeHealthData = async () => {
   }
 };
 
+// Lưu timestamp mới
+export const setLastSyncedActivity = async (timestamp: string) => {
+  try {
+    await AsyncStorage.setItem("lastSyncedActivityTimestamp", timestamp);
+  } catch (error) {
+    console.error("❌ Lỗi khi lưu timestamp đồng bộ:", error);
+  }
+};
+
+// Lấy timestamp cuối cùng đã đồng bộ
+export const getLastSyncedActivity = async (): Promise<string | null> => {
+  try {
+    const value = await AsyncStorage.getItem("lastSyncedActivityTimestamp");
+    return value;
+  } catch (error) {
+    console.error("❌ Lỗi khi đọc timestamp đồng bộ:", error);
+    return null;
+  }
+};
+
 /*
  * xóa tất cả dữ liệu trong AsyncStorage
  */

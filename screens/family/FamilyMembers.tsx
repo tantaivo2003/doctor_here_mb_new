@@ -6,6 +6,7 @@ import {
   fetchPendingInvites,
   updateRelationship,
   confirmRelationship,
+  createRelationship,
 } from "../../api/Family";
 import { FamilyMember, PendingInvite } from "../../types/types";
 import { getUserID } from "../../services/storage";
@@ -14,20 +15,21 @@ import LoadingModal from "../../components/ui/LoadingModal";
 import ConfirmModal from "../../components/ui/ComfirmModal";
 import Modal from "react-native-modal";
 import SelectField from "../../components/ui/SelectField";
+import TextInputField from "../../components/ui/TextInputField";
 import Toast from "react-native-toast-message";
+import { set } from "date-fns";
 
 const relationshipOptions = [
-  { title: "Chồng", icon: "human-male" },
-  { title: "Vợ", icon: "human-female" },
-  { title: "Con trai", icon: "human-male-child" },
-  { title: "Con gái", icon: "human-female-child" },
-  { title: "Ông", icon: "human-male-male" },
-  { title: "Bà", icon: "human-female-female" },
-  { title: "Anh/Chị", icon: "account-group" },
-  { title: "Em", icon: "account-child" },
-  { title: "Khác", icon: "account-question" },
+  { title: "Chồng", icon: "account-cowboy-hat" }, // Người đàn ông - phong cách "người lớn", mạnh mẽ
+  { title: "Vợ", icon: "human-female" }, // Người phụ nữ
+  { title: "Con trai", icon: "baby-face-outline" }, // Em bé trai
+  { title: "Con gái", icon: "baby-face" }, // Em bé gái
+  { title: "Ông", icon: "account-tie" }, // Người đàn ông già - áo vest cà vạt
+  { title: "Bà", icon: "account-outline" }, // Người phụ nữ (không có icon "bà già" chuẩn, dùng outline cho nhẹ nhàng)
+  { title: "Anh/Chị", icon: "account" }, // Người trưởng thành
+  { title: "Em", icon: "account-child" }, // Em nhỏ
+  { title: "Khác", icon: "account-question" }, // Khác
 ];
-
 const FamilyMembers = ({ navigation }: any) => {
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
@@ -38,10 +40,14 @@ const FamilyMembers = ({ navigation }: any) => {
   const [selectedPending, setSelectedPending] = useState<PendingInvite | null>(
     null
   );
-  const [seletedRole, setSeletedRole] = useState<string>("");
+  const [selectedRole, setSelectedRole] = useState<string>("");
 
   const [loading, setLoading] = useState<boolean>(true);
   const [loadingModalVisible, setLoadingModalVisible] = useState(false);
+
+  const [addMemberModalVisible, setAddMemberModalVisible] = useState(false);
+  const [newMemberRole, setNewMemberRole] = useState<string>("");
+  const [newMemberPhoneNumber, setNewMemberPhoneNumber] = useState<string>("");
 
   const [changeRoleModalVisible, setChangeRoleModalVisible] = useState(false);
   const [confirmRalativeModalVisible, setConfirmRalativeModalVisible] =
@@ -84,12 +90,12 @@ const FamilyMembers = ({ navigation }: any) => {
     setLoadingModalVisible(true);
     try {
       const pID = await getUserID();
-      console.log("API: ", pID, selectedMember?.ma_benh_nhan_2, seletedRole);
+      console.log("API: ", pID, selectedMember?.ma_benh_nhan_2, selectedRole);
 
       const result = await updateRelationship(
         pID,
         selectedMember?.ma_benh_nhan_2,
-        seletedRole
+        selectedRole
       );
       getFamilyData();
       Toast.show({
@@ -148,6 +154,60 @@ const FamilyMembers = ({ navigation }: any) => {
 
     setLoadingModalVisible(false);
   };
+
+  const handleAddMember = async () => {
+    // Log thông tin trước khi gọi API
+    console.log("API: ", newMemberPhoneNumber, newMemberRole);
+
+    // Kiểm tra nếu số điện thoại và mối quan hệ không rỗng
+    if (!newMemberPhoneNumber || !newMemberRole) {
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Vui lòng điền đầy đủ thông tin.",
+      });
+      setAddMemberModalVisible(false);
+      return;
+    }
+
+    try {
+      const pID = await getUserID();
+      if (!pID) {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: "Có lỗi hệ thống xảy ra! Hãy đăng nhập lại.",
+        });
+        setAddMemberModalVisible(false);
+        return;
+      }
+      // Gọi hàm createRelationship với thông tin từ form
+      const response = await createRelationship(
+        pID,
+        newMemberPhoneNumber,
+        newMemberRole
+      );
+
+      // Xử lý kết quả từ API
+      Toast.show({
+        type: "success",
+        text1: "Thành công",
+        text2: "Đã gửi lời mời thành công!",
+      });
+
+      // Đóng modal sau khi thêm thành viên thành công
+      setAddMemberModalVisible(false);
+    } catch (err) {
+      // Xử lý lỗi nếu có
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Hãy nhập đúng số điện thoại",
+      });
+      setAddMemberModalVisible(false);
+    }
+  };
+
   return (
     <View className="flex-1 bg-white px-4">
       {loadingModalVisible && <LoadingModal />}
@@ -201,11 +261,21 @@ const FamilyMembers = ({ navigation }: any) => {
           )}
         </ScrollView>
       )}
-
+      <View className="absolute bottom-6 right-6">
+        <TouchableOpacity
+          className="w-14 h-14 bg-blue-500 rounded-full justify-center items-center shadow-lg"
+          onPress={() => {
+            setAddMemberModalVisible(true);
+          }}
+        >
+          <Text className="text-white text-3xl">+</Text>
+        </TouchableOpacity>
+      </View>
       <Modal
         isVisible={changeRoleModalVisible}
         animationIn="zoomIn"
         animationOut="zoomOut"
+        onBackdropPress={() => setChangeRoleModalVisible(false)}
       >
         <View className="justify-center items-center">
           <View className="bg-white rounded-2xl p-6 ">
@@ -216,8 +286,8 @@ const FamilyMembers = ({ navigation }: any) => {
               label=""
               data={relationshipOptions}
               value={selectedMember?.than_phan || ""}
-              placeholder="Thay đổi thân phận"
-              onChange={(val) => setSeletedRole(val)}
+              placeholder="Thay đổi quan hệ"
+              onChange={(val) => setSelectedRole(val)}
             />
             <View className="flex-row justify-around mt-3 gap-5">
               <TouchableOpacity
@@ -231,6 +301,56 @@ const FamilyMembers = ({ navigation }: any) => {
                 onPress={() => confirmChangeRole()}
               >
                 <Text className="text-white">Thay đổi</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        isVisible={addMemberModalVisible}
+        animationIn="zoomIn"
+        animationOut="zoomOut"
+        onBackdropPress={() => setAddMemberModalVisible(false)}
+      >
+        <View className="justify-center items-center">
+          <View className="bg-white rounded-2xl p-6">
+            <Text className="text-lg font-bold text-center mb-3">
+              Thêm thành viên
+            </Text>
+
+            {/* Thêm trường nhập liệu cho số điện thoại */}
+            <TextInputField
+              iconName="phone"
+              label="Số điện thoại"
+              value={newMemberPhoneNumber}
+              onChangeText={setNewMemberPhoneNumber} // Cập nhật state khi người dùng nhập
+              keyboardType="phone-pad" // Chỉ nhận đầu vào là số
+              placeholder="Nhập số điện thoại"
+            />
+
+            {/* Thêm SelectField cho mối quan hệ */}
+            <SelectField
+              label="Quan hệ"
+              data={relationshipOptions}
+              value={newMemberRole || ""}
+              placeholder="Thay đổi quan hệ"
+              onChange={(val) => setNewMemberRole(val)}
+            />
+
+            {/* Các nút Hủy và Thêm */}
+            <View className="flex-row justify-around mt-3 gap-5">
+              <TouchableOpacity
+                className="py-3 px-6 bg-gray-100 w-2/5 items-center rounded-full"
+                onPress={() => setAddMemberModalVisible(false)}
+              >
+                <Text>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="py-3 px-6 bg-blue-500 w-2/5 items-center rounded-full"
+                onPress={() => handleAddMember()}
+              >
+                <Text className="text-white">Thêm</Text>
               </TouchableOpacity>
             </View>
           </View>

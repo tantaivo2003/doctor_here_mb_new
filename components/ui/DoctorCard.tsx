@@ -136,7 +136,7 @@ const DoctorCard: FC<DoctorCardProps> = ({
         <View className="h-[1px] bg-gray-300 my-2" />
 
         <Text className="text-sm text-gray-600">{specialty}</Text>
-        <View className="flex-row items-center mt-1">
+        <View className="flex-row items-center mt-1 mr-2">
           <MaterialIcons name="location-on" size={16} color="#6B7280" />
           <Text className="text-sm text-gray-600 ml-1">{hospital}</Text>
         </View>

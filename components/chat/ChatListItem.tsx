@@ -33,7 +33,11 @@ export const ChatListItem: FC<ChatListItemProps> = ({ doctor, onPress }) => {
       {/* Nội dung tin nhắn */}
       <View className="flex-1 ml-3">
         <Text className="font-semibold text-gray-900">{doctor.name}</Text>
-        <Text className="text-gray-500 text-sm truncate w-48">
+        <Text
+          className={`text-sm truncate w-48 ${
+            doctor.unreadCount > 0 ? "font-bold text-black" : "text-gray-500 "
+          }`}
+        >
           {doctor.message}
         </Text>
       </View>

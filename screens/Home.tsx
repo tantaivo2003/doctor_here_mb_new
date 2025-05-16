@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import ShortcutButton from "../components/ui/ShortCutButton";
 import SearchIcon from "../components/icons/SearchIcon";
-import { Doctor } from "../types/types";
+import { Doctor, Specialization } from "../types/types";
 import {
   storeUserID,
   getUserID,
@@ -20,6 +20,8 @@ import {
 } from "../services/storage";
 import { getLoveList } from "../api/LoveList";
 import { registerUser } from "../socket";
+import { fetchSpecializations } from "../api/Doctor";
+import NotificationTag11 from "../components/ui/NotificationTag";
 
 const systemShortcuts = [
   {
@@ -63,13 +65,14 @@ const specialist2Shortcuts = [
 ];
 
 export default function Home({ navigation }: any) {
-  const [patientId, setPatientId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [lovedDoctors, setLovedDoctors] = useState<Doctor[]>([]);
+  const [specializations, setSpecializations] = useState<Specialization[]>([]);
+  const [showAllSpecializations, setShowAllSpecializations] = useState(false);
 
   useEffect(() => {
     const registerSocket = async () => {
-      const userId = "BN0000006";
+      const userId = await getUserID();
       if (userId) {
         registerUser(userId);
       }
@@ -77,25 +80,22 @@ export default function Home({ navigation }: any) {
     registerSocket();
   }, []);
 
-  useEffect(() => {
-    const fetchUserId = async () => {
-      const userId = await getUserID();
-      setPatientId(userId);
-    };
-    fetchUserId();
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
       const fetchDoctors = async () => {
-        if (!patientId) return;
-        const data = await getLoveList(patientId);
+        const userId = await getUserID();
+        if (!userId) return;
+        const data = await getLoveList(userId);
         setLovedDoctors(data);
         storeFavoriteDoctors(data);
+
+        const result = await fetchSpecializations();
+        setSpecializations(result);
+        console.log("Specializations:", result.length);
       };
 
       fetchDoctors();
-    }, [patientId])
+    }, [])
   );
 
   return (
@@ -106,6 +106,14 @@ export default function Home({ navigation }: any) {
       <Text className="text-xl font-bold text-gray-800">
         Xin chào, Tấn Tài!
       </Text>
+      <NotificationTag11
+        message="Dự đoán bệnh tiểu đường"
+        onPress={() => navigation.navigate("DiabetesPredictionScreen")}
+        backgroundColor="bg-green-500" // Thay đổi màu nền nếu cần
+        textColor="text-white"
+        iconName="pill" // Sử dụng icon thuốc
+      />
+
       <View className="flex-row items-center rounded-lg my-3 px-3 py-1 bg-gray-50 text-gray-400 shadow-sm focus:ring-2 focus:ring-blue-500">
         <SearchIcon width={25} height={25} color="#9CA3AF" />
         <TextInput
@@ -113,7 +121,9 @@ export default function Home({ navigation }: any) {
           value={searchTerm}
           onChangeText={setSearchTerm}
           className="flex-1 outline-none px-2 text-base"
-          onPress={() => navigation.navigate("FindDoctorScreen")}
+          onPress={() =>
+            navigation.navigate("FindDoctorScreen", { parseSearchTerm: "" })
+          }
           // onSubmitEditing={() =>
           //   navigation.navigate("FindDoctorScreen", { searchTerm })
           // }
@@ -129,27 +139,44 @@ export default function Home({ navigation }: any) {
           />
         ))}
       </View>
+      <View className="flex flex-row justify-between mt-10 mb-5">
+        <Text className="text-xl font-bold text-gray-800 ">
+          Khám theo chuyên khoa
+        </Text>
+        {!showAllSpecializations && specializations.length > 4 ? (
+          <TouchableOpacity
+            onPress={() => setShowAllSpecializations(true)}
+            className=""
+          >
+            <Text className="text-blue-500">Xem tất cả</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={() => setShowAllSpecializations(false)}
+            className=""
+          >
+            <Text className="text-blue-500">Đóng</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
-      <Text className="text-xl font-bold text-gray-800 mt-10 mb-5">
-        Khám theo chuyên khoa
-      </Text>
       <View className="bg-white rounded-2xl shadow-lg shadow-gray-400">
-        <View className="flex-row justify-between ">
-          {specialist1Shortcuts.map((item, index) => (
-            <ShortcutButton
-              key={index}
-              {...item}
-              onPress={() => navigation.navigate("FindDoctorScreen")}
-            />
-          ))}
-        </View>
-        <View className="flex-row justify-between">
-          {specialist2Shortcuts.map((item, index) => (
-            <ShortcutButton
-              key={index}
-              {...item}
-              onPress={() => navigation.navigate("FindDoctorScreen")}
-            />
+        <View className="flex-row flex-wrap justify-between">
+          {(showAllSpecializations
+            ? specializations
+            : specializations.slice(0, 4)
+          ).map((item, index) => (
+            <View key={index} className="w-[23%] mb-4">
+              <ShortcutButton
+                title={item.ten_chuyen_khoa}
+                imageUrl={item.img_url}
+                onPress={() =>
+                  navigation.navigate("FindDoctorScreen", {
+                    parseSearchTerm: item.ten_chuyen_khoa,
+                  })
+                }
+              />
+            </View>
           ))}
         </View>
       </View>

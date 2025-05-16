@@ -1,0 +1,220 @@
+import React, { useState, useEffect } from "react";
+import { Text, View, TouchableOpacity } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
+// UI Components
+import Toast from "react-native-toast-message";
+import LoadingAnimation from "../../components/ui/LoadingAnimation";
+import HealthMetricCard from "../../components/HealthMetrics/HealthMetricCard";
+
+// Health Connect Permissions & Initialization
+import { ACTIVITY_PERMISSIONS } from "../../services/healthConnect/permissions";
+import { checkAndRequestPermissions } from "../../services/healthConnect/healthConnectPermissions";
+import { initializeHealthConnect } from "../../services/healthConnect/healthConnect";
+
+import SelectField from "../../components/ui/SelectField";
+import { convertOptionToInterval } from "../../utils/validators";
+import { FontAwesome5 } from "@expo/vector-icons";
+
+import { useTimeFilter } from "./useTimeFilter";
+import TimeNavigator from "../../components/ui/TimeNavigator";
+// Health Records
+import {
+  getTodayHealthRecord,
+  getActivityRecord,
+} from "../../utils/readHealthRecords";
+
+import { HealthRecord } from "../../types/types";
+import HealthMetricsLineChart from "../../components/HealthMetrics/HealthMetricsLineChart";
+import { formatDateTime } from "../../utils/formatDateTime";
+
+const displayOptions = [
+  { title: "Ngày", icon: "calendar-today" },
+  { title: "Tuần", icon: "calendar-week" },
+  { title: "Tháng", icon: "calendar-month" },
+];
+
+const ActivityScreen = ({ navigation }: any) => {
+  const [loading, setLoading] = useState(false);
+  const [latestStepsRecord, setLatestStepsRecord] = useState<number>();
+  const [latestDistanceRecord, setLatestDistanceRecord] = useState<number>();
+
+  const [stepsRecords, setStepsRecords] = useState<HealthRecord[]>([]);
+  const [distanceRecords, setDistanceRecords] = useState<HealthRecord[]>([]);
+
+  const [stepsDisplayOption, setStepsDisplayOption] = useState("Ngày");
+  const [distanceDisplayOption, setDistanceDisplayOption] = useState("Ngày");
+
+  const {
+    currentDate: stepsDate,
+    getStartEndDate: getStepsStartEndDate,
+    handleChange: handleStepsChange,
+  } = useTimeFilter();
+  const [stepChartLoading, setStepChartLoading] = useState(false);
+
+  const {
+    currentDate: distanceDate,
+    getStartEndDate: getDistanceStartEndDate,
+    handleChange: handleDistanceChange,
+  } = useTimeFilter();
+
+  const init = async () => {
+    await initializeHealthConnect();
+    const hasPermission = await checkAndRequestPermissions(
+      ACTIVITY_PERMISSIONS
+    );
+    return hasPermission;
+  };
+
+  const fetchLatestData = async () => {
+    const latestSteps = await getTodayHealthRecord("Steps");
+    const latestDistance = await getTodayHealthRecord("Distance");
+
+    if (latestSteps) setLatestStepsRecord(latestSteps);
+    if (latestDistance) setLatestDistanceRecord(latestDistance);
+  };
+
+  const fetchRecords = async () => {
+    const { startDate: stepsStart, endDate: stepsEnd } =
+      getStepsStartEndDate(stepsDisplayOption);
+    const { startDate: distanceStart, endDate: distanceEnd } =
+      getDistanceStartEndDate(distanceDisplayOption);
+
+    const stepsInterval = convertOptionToInterval(stepsDisplayOption);
+    const distanceInterval = convertOptionToInterval(distanceDisplayOption);
+
+    const stepsRecords = await getActivityRecord(
+      "Steps",
+      stepsStart.toISOString(),
+      stepsEnd.toISOString(),
+      stepsInterval
+    );
+
+    const distanceRecords = await getActivityRecord(
+      "Distance",
+      distanceStart.toISOString(),
+      distanceEnd.toISOString(),
+      distanceInterval
+    );
+
+    if (stepsRecords) {
+      setStepsRecords(stepsRecords);
+    }
+    if (distanceRecords) {
+      setDistanceRecords(distanceRecords);
+    }
+  };
+
+  useEffect(() => {
+    const initAndFetch = async () => {
+      setLoading(true);
+      const hasPermission = await init();
+      if (!hasPermission) {
+        navigation.goBack();
+        return;
+      }
+      await fetchLatestData();
+      await fetchRecords();
+      setLoading(false);
+    };
+    initAndFetch();
+  }, []);
+
+  useEffect(() => {
+    fetchRecords();
+  }, [
+    stepsDisplayOption,
+    distanceDisplayOption,
+    stepsMonth,
+    stepsYear,
+
+    distanceMonth,
+    distanceYear,
+  ]);
+
+  return (
+    <ScrollView className="flex-1 p-4 bg-white">
+      {loading ? (
+        <LoadingAnimation />
+      ) : (
+        <View className="flex-row justify-between mb-4">
+          <HealthMetricCard
+            label="Bước đi"
+            unit="bước"
+            value={latestStepsRecord}
+            imageSource={require("../../assets/healthMetrics/stepCount.png")}
+          />
+          <HealthMetricCard
+            label="Quãng đường"
+            unit="mét"
+            value={latestDistanceRecord?.toFixed(2)}
+            imageSource={require("../../assets/healthMetrics/distance.png")}
+          />
+        </View>
+      )}
+
+      {/* Biểu đồ bước chân */}
+      {stepsRecords.length > 0 && (
+        <>
+          <View className="flex-row justify-between items-center">
+            <View className="flex-1">
+              <Text className="text-lg font-bold">Biểu đồ số bước chân</Text>
+            </View>
+            <View className="w-40">
+              <SelectField
+                label=""
+                data={displayOptions}
+                value={stepsDisplayOption || ""}
+                placeholder="Kiểu hiển thị"
+                onChange={(val) => setStepsDisplayOption(val)}
+              />
+            </View>
+          </View>
+          <TimeNavigator
+            displayOption={stepsDisplayOption}
+            currentMonth={stepsMonth}
+            currentYear={stepsYear}
+            onChange={handleStepsChange}
+          />
+
+          {stepChartLoading ? (
+            <LoadingAnimation />
+          ) : (
+            <HealthMetricsLineChart healthMetricsLineData={stepsRecords} />
+          )}
+        </>
+      )}
+
+      {/* Biểu đồ quãng đường di chuyển*/}
+
+      {distanceRecords.length > 0 && (
+        <>
+          <View className="flex-row justify-between items-center">
+            <View className="flex-1">
+              <Text className="text-lg font-bold">
+                Biểu đồ quãng đường di chuyển
+              </Text>
+            </View>
+            <View className="w-40">
+              <SelectField
+                label=""
+                data={displayOptions}
+                value={distanceDisplayOption || ""}
+                placeholder="Kiểu hiển thị"
+                onChange={(val) => setDistanceDisplayOption(val)}
+              />
+            </View>
+          </View>
+          <TimeNavigator
+            displayOption={distanceDisplayOption}
+            currentMonth={distanceMonth}
+            currentYear={distanceYear}
+            onChange={handleDistanceChange}
+          />
+          <HealthMetricsLineChart healthMetricsLineData={distanceRecords} />
+        </>
+      )}
+    </ScrollView>
+  );
+};
+
+export default ActivityScreen;

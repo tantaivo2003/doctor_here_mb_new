@@ -1,3 +1,5 @@
+import { HealthRecord } from "../types/types";
+
 export const calculateBMI = (heightM: number, weightKg: number) => {
   if (heightM <= 0 || weightKg <= 0) {
     return 0;
@@ -7,9 +9,43 @@ export const calculateBMI = (heightM: number, weightKg: number) => {
   return bmi;
 };
 
-{
-  /* Xác định màu sắc và lời khuyên dựa trên BMI */
-}
+export const calculateBMIRecords = (
+  heightRecords: HealthRecord[],
+  weightRecords: HealthRecord[]
+): HealthRecord[] => {
+  const parseDateSmart = (dateStr: string): Date => {
+    if (/^\d{4}$/.test(dateStr)) {
+      return new Date(`${dateStr}-01-01`);
+    } else if (/^\d{4}-\d{2}$/.test(dateStr)) {
+      return new Date(`${dateStr}-01`);
+    } else {
+      return new Date(dateStr);
+    }
+  };
+
+  const sortedHeights = [...heightRecords].sort(
+    (a, b) =>
+      parseDateSmart(a.date).getTime() - parseDateSmart(b.date).getTime()
+  );
+
+  return weightRecords.map((weight) => {
+    const weightDate = parseDateSmart(weight.date);
+
+    const matchedHeight = [...sortedHeights]
+      .reverse()
+      .find((h) => parseDateSmart(h.date).getTime() <= weightDate.getTime());
+
+    const heightM = matchedHeight ? matchedHeight.value / 100 : 0;
+    const weightKg = weight.value;
+    const bmiValue = calculateBMI(heightM, weightKg);
+
+    return {
+      date: weight.date,
+      value: bmiValue,
+    };
+  });
+};
+
 export const getBMIStatus = (bmi: number) => {
   if (bmi < 18.5) {
     return {

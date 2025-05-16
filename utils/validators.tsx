@@ -61,3 +61,16 @@ export const convertOptionToInterval = (
       return "WEEKS"; // fallback
   }
 };
+
+export const mapDisplayOptionToType = (option: string) => {
+  switch (option) {
+    case "Tuần":
+      return "daily"; // vì tuần sẽ hiển thị dữ liệu từng ngày
+    case "Tháng":
+      return "monthly";
+    case "Năm":
+      return "yearly";
+    default:
+      return "daily";
+  }
+};

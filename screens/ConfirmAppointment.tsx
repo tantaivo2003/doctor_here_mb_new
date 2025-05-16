@@ -39,8 +39,8 @@ export default function ConfirmAppointment({ navigation, route }: any) {
       timeslotID: time.id,
       urls: images,
     };
-
     const success = await createAppointment(appointmentInformation);
+    setLoadingModal(false);
     if (success) {
       setModalVisible(true);
       setNotificationType("success");
@@ -50,7 +50,6 @@ export default function ConfirmAppointment({ navigation, route }: any) {
       setNotificationType("error");
       setNotificationMessage("Đã xảy ra lỗi khi đặt lịch khám.");
     }
-    setLoadingModal(false);
   };
 
   useEffect(() => {
@@ -209,7 +208,6 @@ export default function ConfirmAppointment({ navigation, route }: any) {
       {/* Hiển thị modal */}
       <NotificationModal
         visible={isModalVisible}
-        //nếu time là 09:00 AM thì type là error ngược lại
         type={notificationType}
         message={notificationMessage}
         onClose={() => {

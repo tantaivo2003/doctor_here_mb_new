@@ -31,6 +31,7 @@
     "expo-device": "~7.0.3",
     "expo-health-connect": "^0.1.1",
     "expo-image-picker": "~16.0.6",
+    "expo-linear-gradient": "~14.0.2",
     "expo-notifications": "~0.29.14",
     "expo-status-bar": "~2.0.0",
     "fuse.js": "^7.1.0",

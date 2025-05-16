@@ -23,6 +23,7 @@ import { Ionicons } from "@expo/vector-icons";
 import LoadingAnimation from "../../components/ui/LoadingAnimation";
 export default function AppointmentDetails({ navigation, route }: any) {
   const { appointment } = route.params;
+  console.log(appointment);
   const [loading, setLoading] = useState(true);
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -84,11 +85,11 @@ export default function AppointmentDetails({ navigation, route }: any) {
       showsVerticalScrollIndicator={false}
     >
       <DoctorCard
-        id={appointmentDetail.doctorId}
-        name={appointmentDetail.doctorName}
-        specialty={appointmentDetail.doctorSpecialty}
-        hospital={appointmentDetail.clinicAddress}
-        image={appointmentDetail.doctorAvatarUrl}
+        id={appointment.doctorId}
+        name={appointment.doctor}
+        specialty={appointment.specialty}
+        hospital={appointment.hospital}
+        image={appointment.image}
       />
 
       {appointmentDetail.rating && (

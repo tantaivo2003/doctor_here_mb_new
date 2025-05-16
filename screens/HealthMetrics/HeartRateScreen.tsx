@@ -7,9 +7,11 @@ import LoadingAnimation from "../../components/ui/LoadingAnimation";
 import HealthMetricsLineChart from "../../components/HealthMetrics/HealthMetricsLineChart";
 import HealthMetricCard from "../../components/HealthMetrics/HealthMetricCard";
 import HealthDataInputModal from "../../components/HealthMetrics/HealthDataInputModal";
+import { useTimeFilter } from "./useTimeFilter";
+import TimeNavigator from "../../components/ui/TimeNavigator";
 
 // Local storage
-import { storeHealthData, getHealthData } from "../../services/storage";
+import { getUserID } from "../../services/storage";
 
 // Health Connect Permissions & Initialization
 import { HEART_SCREEN_PERMISSIONS } from "../../services/healthConnect/permissions";
@@ -21,10 +23,7 @@ import {
 import { initializeHealthConnect } from "../../services/healthConnect/healthConnect";
 
 // Health Records
-import {
-  fetchHealthRecords,
-  fetchLatestHealthRecord,
-} from "../../utils/readHealthRecords";
+import { fetchHealthRecords } from "../../utils/readHealthRecords";
 import { insertHealthRecord } from "../../utils/insertHealthRecord";
 import {
   groupHealthRecordsByPeriod,
@@ -33,13 +32,23 @@ import {
 
 // Utility functions
 import SelectField from "../../components/ui/SelectField";
-import { convertOptionToInterval } from "../../utils/validators";
+import {
+  convertOptionToInterval,
+  mapDisplayOptionToType,
+} from "../../utils/validators";
 
 // Types
 import { HealthRecord } from "../../types/types";
 
+import {
+  fetchBreathRateData,
+  fetchHeartRateData,
+  fetchLatestHealthRecord,
+  postSimpleMetric,
+} from "../../api/HealthMetrics";
+import { set } from "date-fns";
+
 const displayOptions = [
-  { title: "Ngày", icon: "calendar" },
   { title: "Tuần", icon: "calendar-week" },
   { title: "Tháng", icon: "calendar-month" },
   { title: "Năm", icon: "calendar-multiple" },
@@ -69,88 +78,130 @@ const HeartRateScreen = ({ navigation }: any) => {
   const [changeRespiratoryRateValue, setChangeRespiratoryRateValue] =
     useState("");
 
-  const init = async () => {
-    await initializeHealthConnect();
-    const hasPermission = await checkAndRequestPermissions(
-      HEART_SCREEN_PERMISSIONS
-    );
-    return hasPermission;
-  };
+  const {
+    currentDate: heartRateDate,
+    getStartEndDate: getHeartRateStartEndDate,
+    handleChange: handleHeartRateChange,
+  } = useTimeFilter();
+  const {
+    currentDate: respiratoryRateDate,
+    getStartEndDate: getRespiratoryRateStartEndDate,
+    handleChange: handleRespiratoryRateChange,
+  } = useTimeFilter();
 
-  const fetchLatestData = async () => {
-    const latestHeartRate = await fetchLatestHealthRecord("HeartRate");
-    const latestRespiratoryRate = await fetchLatestHealthRecord(
-      "RespiratoryRate"
-    );
+  // const init = async () => {
+  //   await initializeHealthConnect();
+  //   const hasPermission = await checkAndRequestPermissions(
+  //     HEART_SCREEN_PERMISSIONS
+  //   );
+  //   return hasPermission;
+  // };
 
-    if (latestHeartRate) {
-      setLatestHeartRateRecord({
-        value: latestHeartRate.value,
-        date: latestHeartRate.date,
-      });
-    }
-
-    if (latestRespiratoryRate) {
-      setLatestRespiratoryRateRecord({
-        value: latestRespiratoryRate.value,
-        date: latestRespiratoryRate.date,
-      });
-    }
-  };
-  const fetchRecords = async () => {
-    const now = new Date();
-    const past = new Date();
-    past.setMonth(now.getMonth() - 12); // lấy trong 12 tháng gần nhất
-
-    const heartRateInterval = convertOptionToInterval(heartRateDisplayOption);
-    const respiratoryRateInterval = convertOptionToInterval(
-      respiratoryRateDisplayOption
-    );
-
-    const heartRateData = await fetchAndGroupHealthRecords(
-      "HeartRate",
-      past.toISOString(),
-      now.toISOString(),
-      heartRateInterval
-    );
-
-    const respiratoryRateData = await fetchAndGroupHealthRecords(
-      "RespiratoryRate",
-      past.toISOString(),
-      now.toISOString(),
-      respiratoryRateInterval
-    );
-    if (heartRateData) {
-      setHeartRateRecords(heartRateData);
-    }
-    if (respiratoryRateData) {
-      setRespiratoryRateRecords(respiratoryRateData);
-    }
-  };
-
+  // Lấy dữ liệu mới nhất đã lưu khi mở màn hình
   useEffect(() => {
-    const initAndFetch = async () => {
+    const getHeartRate = async () => {
       setLoading(true);
-      const hasPermission = await init();
-      if (!hasPermission) {
-        navigation.goBack();
+      const ptID = await getUserID();
+      if (!ptID) {
+        console.error("Không tìm thấy ID người dùng");
         return;
       }
-      await fetchLatestData();
+
+      const heartbeat = await fetchLatestHealthRecord("heartbeat", ptID);
+      const breath = await fetchLatestHealthRecord("breath", ptID);
+
+      if (heartbeat && !Array.isArray(heartbeat) && "value" in heartbeat) {
+        setLatestHeartRateRecord(heartbeat as HealthRecord);
+      }
+
+      if (breath && !Array.isArray(breath) && "value" in breath) {
+        setLatestRespiratoryRateRecord(breath as HealthRecord);
+      }
+
       setLoading(false);
     };
 
-    initAndFetch();
+    getHeartRate();
   }, []);
 
   useEffect(() => {
-    fetchRecords();
-  }, [heartRateDisplayOption, respiratoryRateDisplayOption]);
+    const fetchHeartRate = async () => {
+      try {
+        setLoading(true);
+        const ptID = await getUserID();
+        if (!ptID) {
+          console.error("Không tìm thấy ID người dùng");
+          return;
+        }
+
+        const type = mapDisplayOptionToType(heartRateDisplayOption);
+        const { startDate, endDate } = getHeartRateStartEndDate(
+          heartRateDisplayOption
+        );
+
+        const heartRateData = await fetchHeartRateData(
+          ptID,
+          type,
+          startDate,
+          endDate
+        );
+        setHeartRateRecords(heartRateData);
+        console.log("heartRateData:", heartRateData);
+      } catch (err) {
+        console.error("Lỗi khi tải dữ liệu nhịp tim", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHeartRate();
+  }, [heartRateDisplayOption, heartRateDate]);
+
+  useEffect(() => {
+    const fetchRespiratoryRate = async () => {
+      try {
+        setLoading(true);
+        const ptID = await getUserID();
+        if (!ptID) {
+          console.error("Không tìm thấy ID người dùng");
+          return;
+        }
+
+        const type = mapDisplayOptionToType(respiratoryRateDisplayOption);
+        const { startDate, endDate } = getRespiratoryRateStartEndDate(
+          respiratoryRateDisplayOption
+        );
+
+        const respiratoryRateData = await fetchBreathRateData(
+          ptID,
+          type,
+          startDate,
+          endDate
+        );
+        setRespiratoryRateRecords(respiratoryRateData);
+        console.log("respiratoryRateData:", respiratoryRateData);
+      } catch (err) {
+        console.error("Lỗi khi tải dữ liệu nhịp thở", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRespiratoryRate();
+  }, [respiratoryRateDisplayOption, respiratoryRateDate]);
 
   const handleSaveData = async (value: string, label: string) => {
     setLoading(true);
     try {
       const now = new Date().toISOString();
+      const ptID = await getUserID();
+      if (!ptID) {
+        Toast.show({
+          type: "error",
+          text1: "Không tìm thấy ID người dùng!",
+        });
+        return;
+      }
       if (label === "nhịp tim") {
         const heartRate = parseFloat(value);
         if (isNaN(heartRate)) {
@@ -160,7 +211,8 @@ const HeartRateScreen = ({ navigation }: any) => {
           });
           return;
         }
-        await insertHealthRecord("HeartRate", heartRate);
+        await insertHealthRecord("HeartRate", heartRate, now);
+        await postSimpleMetric(ptID, "heartbeat", heartRate, now);
         setLatestHeartRateRecord({ value: heartRate, date: now });
       } else {
         const respiratoryRate = parseFloat(value);
@@ -171,7 +223,8 @@ const HeartRateScreen = ({ navigation }: any) => {
           });
           return;
         }
-        await insertHealthRecord("RespiratoryRate", respiratoryRate);
+        await insertHealthRecord("RespiratoryRate", respiratoryRate, now);
+        await postSimpleMetric(ptID, "breath", respiratoryRate, now);
         setLatestRespiratoryRateRecord({ value: respiratoryRate, date: now });
       }
     } catch (error) {
@@ -179,6 +232,33 @@ const HeartRateScreen = ({ navigation }: any) => {
       Toast.show({ type: "error", text1: "Lỗi khi lưu dữ liệu!" });
     } finally {
       setLoading(false);
+      navigation.replace("HeartRateScreen");
+    }
+  };
+
+  const getHeartRateStatus = (heartRate: number, respiratoryRate: number) => {
+    if (heartRate < 60 || respiratoryRate < 12) {
+      return {
+        color: "bg-blue-100",
+        textColor: "text-blue-700",
+        status: "Nhịp tim/thở thấp",
+        advice:
+          "Bạn nên tham khảo ý kiến bác sĩ nếu có triệu chứng bất thường.",
+      };
+    } else if (heartRate <= 100 && respiratoryRate <= 20) {
+      return {
+        color: "bg-green-100",
+        textColor: "text-green-700",
+        status: "Nhịp tim/thở bình thường",
+        advice: "Tiếp tục duy trì lối sống lành mạnh!",
+      };
+    } else {
+      return {
+        color: "bg-red-100",
+        textColor: "text-red-700",
+        status: "Nhịp tim/thở cao",
+        advice: "Bạn nên giảm căng thẳng và theo dõi sức khỏe chặt chẽ.",
+      };
     }
   };
 
@@ -204,49 +284,94 @@ const HeartRateScreen = ({ navigation }: any) => {
           />
         </View>
       )}
+      {latestHeartRateRecord != null &&
+        latestRespiratoryRateRecord != null &&
+        (() => {
+          const { color, textColor, status, advice } = getHeartRateStatus(
+            latestHeartRateRecord.value,
+            latestRespiratoryRateRecord.value
+          );
+
+          return (
+            <View className={`${color} p-4 rounded-lg mb-4`}>
+              <Text className={`${textColor} font-semibold text-center`}>
+                {status}: Nhịp tim của bạn là{" "}
+                <Text className="font-bold">
+                  {latestHeartRateRecord.value} bpm
+                </Text>{" "}
+                và nhịp thở là{" "}
+                <Text className="font-bold">
+                  {latestRespiratoryRateRecord.value} lần/phút
+                </Text>
+                . {advice}
+              </Text>
+            </View>
+          );
+        })()}
 
       {/* Biểu đồ height */}
-      {heartRateRecords.length > 0 && (
-        <>
-          <View className="flex-row justify-between items-center">
-            <View className="flex-1">
-              <Text className="text-lg font-bold">Biểu đồ nhịp tim</Text>
-            </View>
-            <View className="w-40">
-              <SelectField
-                label=""
-                data={displayOptions}
-                value={heartRateDisplayOption || ""}
-                placeholder="Kiểu hiển thị"
-                onChange={(val) => setHeartRateDisplayOption(val)}
-              />
-            </View>
+      <>
+        <View className="flex-row justify-between items-center">
+          <View className="flex-1">
+            <Text className="text-lg font-bold">Biểu đồ nhịp tim</Text>
           </View>
-          <HealthMetricsLineChart healthMetricsLineData={heartRateRecords} />
-        </>
-      )}
+          <View className="w-40">
+            <SelectField
+              label=""
+              data={displayOptions}
+              value={heartRateDisplayOption || ""}
+              placeholder="Kiểu hiển thị"
+              onChange={(val) => setHeartRateDisplayOption(val)}
+            />
+          </View>
+        </View>
 
-      {respiratoryRateRecords.length > 0 && (
-        <>
-          <View className="flex-row justify-between items-center">
-            <View className="flex-1">
-              <Text className="text-lg font-bold">Biểu đồ nhịp thở</Text>
-            </View>
-            <View className="w-40">
-              <SelectField
-                label=""
-                data={displayOptions}
-                value={respiratoryRateDisplayOption || ""}
-                placeholder="Kiểu hiển thị"
-                onChange={(val) => setRespiratoryRateDisplayOption(val)}
-              />
-            </View>
+        <TimeNavigator
+          displayOption={heartRateDisplayOption}
+          currentDate={heartRateDate}
+          onChange={handleHeartRateChange}
+        />
+
+        {heartRateRecords.length > 0 ? (
+          <HealthMetricsLineChart healthMetricsLineData={heartRateRecords} />
+        ) : (
+          <View className="items-center justify-center my-10">
+            <Text className="text-gray-500">Không có dữ liệu</Text>
           </View>
+        )}
+      </>
+
+      <>
+        <View className="flex-row justify-between items-center">
+          <View className="flex-1">
+            <Text className="text-lg font-bold">Biểu đồ nhịp thở</Text>
+          </View>
+          <View className="w-40">
+            <SelectField
+              label=""
+              data={displayOptions}
+              value={respiratoryRateDisplayOption || ""}
+              placeholder="Kiểu hiển thị"
+              onChange={(val) => setRespiratoryRateDisplayOption(val)}
+            />
+          </View>
+        </View>
+        <TimeNavigator
+          displayOption={respiratoryRateDisplayOption}
+          currentDate={respiratoryRateDate}
+          onChange={handleRespiratoryRateChange}
+        />
+
+        {respiratoryRateRecords.length > 0 ? (
           <HealthMetricsLineChart
             healthMetricsLineData={respiratoryRateRecords}
           />
-        </>
-      )}
+        ) : (
+          <View className="items-center justify-center my-10">
+            <Text className="text-gray-500">Không có dữ liệu</Text>
+          </View>
+        )}
+      </>
 
       <HealthDataInputModal
         isVisible={isChangeHeartRate}

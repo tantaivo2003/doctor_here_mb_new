@@ -30,6 +30,7 @@ export const getAppointment = async (
     return data.map((item: any) => ({
       id: item.id,
       doctor: item.Bac_si.Nguoi_dung.ho_va_ten,
+      doctorId: item.Bac_si.ma_bac_si,
       specialty: item.Bac_si.chuyen_khoa,
       hospital: item.Bac_si.dia_chi_pk,
       date: item.Gio_hen.ngay_lam_viec,
@@ -131,6 +132,7 @@ export const fetchDoctorCalendar = async (
     )}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(
       endTime
     )}&isOnlMethod=${isOnlMethod}`;
+    console.log("URL fetchDoctorCalendar:", url); // Log URL để kiểm tra
 
     const response = await fetch(url);
 
@@ -144,6 +146,7 @@ export const fetchDoctorCalendar = async (
 
 export const createAppointment = async (data: any): Promise<boolean> => {
   try {
+    console.log("Data to create appointment:", data); // Log dữ liệu để kiểm tra
     const response = await fetch(`${API_BASE_URL}/api/appointment/create`, {
       method: "POST",
       headers: {

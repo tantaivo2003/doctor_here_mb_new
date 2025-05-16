@@ -4,6 +4,7 @@ import { StreamVideoClient } from "@stream-io/video-react-native-sdk";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-native-sdk";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getAvt, getUserID, getUsername } from "../../services/storage";
+import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 
 const API_KEY = "vnm8mphvy9cx"; // <-- Thay bằng Stream API key
 
@@ -16,12 +17,15 @@ const StreamVideoProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const init = async () => {
-      // const userId = await getUserID();
-      const userId = "BN0000006";
+      const userId = await getUserID();
+      const username = await getUsername();
+      if (!userId) {
+        console.error("User ID is null or undefined");
+        return;
+      }
 
       const token = await AsyncStorage.getItem("stream_token");
       const apiKey = await AsyncStorage.getItem("stream_api_key");
-      const username = "nguoidung1";
 
       console.log("User ID:", userId);
 

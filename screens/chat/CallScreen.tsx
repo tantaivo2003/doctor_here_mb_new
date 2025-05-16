@@ -21,11 +21,13 @@ import Modal from "react-native-modal";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Ionicons } from "@expo/vector-icons";
+import LoadingAnimation from "../../components/ui/LoadingAnimation";
 
 import { getAvt, getUserID } from "../../services/storage";
 
 const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
-  const { doctorID } = route.params;
+  const { doctorId, callId, endTime } = route.params;
   const [patientAvt, setPatientAvt] = useState<string | null>(null);
   const [patientId, setPatientId] = useState<string | null>(null);
 
@@ -44,7 +46,7 @@ const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
   const client = useStreamVideoClient();
   const [call, setCall] = useState<Call | null>(null);
   const callRef = useRef<Call | null>(null);
-  const callId = "42";
+
   const API_BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL;
   const [userId, setUserId] = useState<string | null>("BN0000006");
 
@@ -118,6 +120,30 @@ const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
     fetchPatientId();
   }, []);
 
+  //Kết thúc cuôc gọi khi hết thời gian
+  const hangUp = async () => {
+    await call?.leave();
+    navigation.goBack();
+  };
+
+  useEffect(() => {
+    if (!endTime) return;
+
+    const now = new Date().getTime();
+    const end = new Date(endTime).getTime();
+    const timeout = end - now;
+
+    if (timeout > 0) {
+      const timer = setTimeout(() => {
+        hangUp(); // tự động rời cuộc gọi
+      }, timeout);
+
+      return () => clearTimeout(timer); // dọn dẹp nếu unmount
+    } else {
+      // Nếu đã quá thời gian thì rời ngay
+      hangUp();
+    }
+  }, [endTime]);
   //Các nút tùy chỉnh
   const HangupCallButton = () => {
     const call = useCall();
@@ -196,8 +222,13 @@ const VideoCallScreen: React.FC = ({ navigation, route }: any) => {
 
   if (!call) {
     return (
-      <View className="flex-1 bg-white justify-center items-center">
-        <Text className="text-lg font-bold">Đang tham gia cuộc gọi...</Text>
+      <View className="flex-1 bg-blue-50 justify-center items-center px-6">
+        <Ionicons name="time-outline" size={64} color="#3B82F6" />
+        <Text className="text-xl font-semibold text-blue-700 mt-4 text-center">
+          Đang kết nối với bác sĩ...
+        </Text>
+
+        <LoadingAnimation />
       </View>
     );
   }

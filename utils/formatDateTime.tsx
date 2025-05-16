@@ -1,26 +1,26 @@
 export const formatDateTime = (
   isoString: any,
-  formatType: "date" | "time" | "full" = "full"
+  formatType: "date" | "time" | "full" | "month-year" | "year" = "full"
 ): string => {
   const dateObj = new Date(isoString);
 
-  // Lấy ngày, tháng, năm
-  const day = String(dateObj.getUTCDate()).padStart(2, "0");
-  const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0"); // Tháng bắt đầu từ 0
-  const year = dateObj.getUTCFullYear();
-
-  // Lấy giờ, phút
-  let hours = dateObj.getUTCHours();
-  const minutes = String(dateObj.getUTCMinutes()).padStart(2, "0");
-  const ampm = hours >= 12 ? "PM" : "AM";
-
-  // Chuyển đổi sang định dạng 12 giờ
-  hours = hours % 12 || 12;
+  // Lấy ngày, tháng, năm theo local timezone
+  const day = String(dateObj.getDate()).padStart(2, "0");
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const year = dateObj.getFullYear();
+  // Lấy giờ, phút theo local timezone
+  const hours = String(dateObj.getHours()).padStart(2, "0");
+  const minutes = String(dateObj.getMinutes()).padStart(2, "0");
 
   const formattedDate = `${day}/${month}/${year}`;
-  const formattedTime = `${hours}:${minutes} ${ampm}`;
+  const formattedTime = `${hours}:${minutes}`;
+  const formattedMonthYear = `${month}/${year}`;
+  const formattedYear = `${year}`;
 
   if (formatType === "date") return formattedDate;
   if (formatType === "time") return formattedTime;
+  if (formatType === "month-year") return formattedMonthYear;
+  if (formatType === "year") return formattedYear;
+
   return `${formattedDate} - ${formattedTime}`;
 };

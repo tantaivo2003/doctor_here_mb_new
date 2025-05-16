@@ -54,10 +54,16 @@ export const doctorlist: Doctor[] = [
     image: require("../assets/doctor_picture/michael.png"),
   },
 ];
+//Danh sách chuyên khoa
+export interface Specialization {
+  ten_chuyen_khoa: string;
+  img_url: string;
+}
 
 export interface Appointment {
   id?: string;
   doctor: string; // Tên bác sĩ
+  doctorId?: string;
   specialty: string; // Chuyên khoa
   hospital: string; // Địa chỉ phòng khám
   date: string; // Ngày hẹn
@@ -284,6 +290,28 @@ export interface MedicineIntake {
   period: string; // buoi_uong
 }
 
+export interface MedicineIntakeDetail {
+  id: number;
+  gio: string;
+  ngay: string;
+  don_thuoc: number;
+  nhac_nho: boolean;
+  thoi_diem_da_uong: string;
+  buoi_uong: string;
+  Thuoc_uong: {
+    so_luong: number;
+    id: number;
+    ten_thuoc: string;
+    don_vi: string;
+    url: string;
+  }[];
+  Don_thuoc: {
+    id: number;
+    ten_don_thuoc: string;
+    ghi_chu: string;
+  };
+}
+
 export interface MedicineSchedule {
   id: number;
   diagnosisResultId: number; // id_ket_qua
@@ -294,6 +322,24 @@ export interface MedicineSchedule {
   prescriptionName: string; // ten_don_thuoc
   patientId: string; // ma_benh_nhan
   intakes: MedicineIntake[]; // Lan_uong
+}
+
+export interface MedicineScheduleIntake {
+  diagnosisResultId: number; // id_ket_qua
+  startDate: string; // ngay_bat_dau
+  endDate: string; // ngay_ket_thuc
+  status: string; // trang_thai
+  note: string; // ghi_chu
+  prescriptionName: string; // ten_don_thuoc
+  patientId: string; // ma_benh_nhan
+
+  id: number;
+  time: string; // gio
+  date: string; // ngay
+  prescriptionId: number; // don_thuoc
+  reminder: boolean; // nhac_nho
+  takenAt: string | null; // thoi_diem_da_uong
+  period: string; // buoi_uong
 }
 
 export interface Rating {
@@ -556,13 +602,8 @@ export interface HealthRecord {
   date: string;
   value: number;
 }
-
-export interface HeightRecord {
-  date: string; // Ngày ghi nhận
-  heightInMeters: number; // Chiều cao (cm)
-}
-
-export interface WeightRecord {
-  date: string; // Ngày ghi nhận
-  weightInKilograms: number; // Cân nặng (kg)
+export interface BloodPressureHealthRecord {
+  date: string;
+  systolic: number;
+  diastolic: number;
 }

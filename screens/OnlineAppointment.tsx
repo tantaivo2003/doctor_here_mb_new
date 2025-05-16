@@ -17,7 +17,7 @@ import {
 import dayjs from "dayjs";
 import "dayjs/locale/vi"; // Import locale tiếng Việt
 import { Ionicons } from "@expo/vector-icons";
-import CalendarUI from "../components/ui/CalendarUI";
+import DoctorCalendarUI from "../components/ui/DoctorCalendarUI";
 import { GioHen } from "../types/types";
 import { pickImageFromLibrary } from "../utils/imagePicker";
 import ZoomImageModal from "../components/ui/ZoomImageModal";
@@ -90,7 +90,7 @@ export default function OnlineAppointment({ navigation, route }: any) {
         onChangeText={setReason}
       />
 
-      <CalendarUI
+      <DoctorCalendarUI
         doctorId={doctor.id}
         isOnlineMethod={true}
         onSelectDateTime={handleSelectDateTime}

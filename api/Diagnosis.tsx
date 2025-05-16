@@ -1,9 +1,11 @@
 const API_BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL;
+import Toast from "react-native-toast-message";
 import {
   DiagnosisResult,
   DiagnosisDetail,
   MedicineIntake,
   MedicineSchedule,
+  MedicineIntakeDetail,
 } from "../types/types";
 
 export const fetchDiagnosisResults = async (
@@ -46,6 +48,7 @@ export const fetchDiagnosisDetail = async (
   id: number
 ): Promise<DiagnosisDetail> => {
   try {
+    console.log(`${API_BASE_URL}/api/diagnosis/detail/${id}`);
     const response = await fetch(`${API_BASE_URL}/api/diagnosis/detail/${id}`);
     if (!response.ok) {
       throw new Error("Failed to fetch diagnosis detail");
@@ -141,7 +144,6 @@ export const updateTakenTime = async (
   try {
     const date = new Date(isoDateTime);
     const newTime = date.toTimeString().split(" ")[0]; // Chuyển về "HH:mm:ss"
-    console.log("Thay đổi thời gian uống thuốc", newTime);
 
     const response = await fetch(
       `${API_BASE_URL}/api/diagnosis/medicine_schedule/${scheduleId}`,
@@ -162,7 +164,11 @@ export const updateTakenTime = async (
     const resData = await response.json();
     return resData;
   } catch (error) {
-    console.error("Lỗi khi gọi API updateMedicineSchedule:", error);
+    Toast.show({
+      type: "error",
+      text1: "Thất bại",
+      text2: "Bạn chỉ được thay đổi thời gian trong đúng buổi uống.",
+    });
   }
 };
 
@@ -185,6 +191,30 @@ export const toggleMedicineSchedule = async (scheduleId: number) => {
     return resData.thoi_diem_da_uong;
   } catch (error) {
     console.error("Lỗi khi gọi API toggleMedicineSchedule:", error);
+    throw error;
+  }
+};
+
+export const fetchMedicineScheduleById = async (scheduleId: number) => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/diagnosis/medicine_schedule/${scheduleId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: MedicineIntakeDetail = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching medicine schedule:", error);
     throw error;
   }
 };

@@ -25,9 +25,11 @@ export default function DiagnosisDetails({ route }: any) {
     const loadDetail = async () => {
       setLoading(true);
       try {
+        console.log("Fetching diagnosis detail for ID:", diagnosis.id);
         const result = await fetchDiagnosisDetail(diagnosis.id);
         setDetail(result);
         console.log("Diagnosis detail:", result);
+        setLoading(false);
       } catch (error) {
         console.error("Error loading diagnosis detail:", error);
       } finally {

@@ -1,11 +1,17 @@
-import { View, Text, FlatList, Image, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
 import { useState, useEffect } from "react";
 import Modal from "react-native-modal";
 import { FontAwesome } from "@expo/vector-icons";
 import DateTimePicker, {
   DateType,
   getDefaultStyles,
-  getDefaultClassNames,
 } from "react-native-ui-datepicker";
 
 import dayjs from "dayjs";
@@ -16,28 +22,53 @@ import {
   updateTakenTime,
   toggleMedicineSchedule,
 } from "../../api/Diagnosis";
-import { MedicineIntake, MedicineSchedule } from "../../types/types";
+import { MedicineScheduleIntake, MedicineSchedule } from "../../types/types";
 import MedicineItem from "../../components/medicineSchedule/MedicineItem";
 import { getUserID } from "../../services/storage";
 import Toast from "react-native-toast-message";
+import LoadingAnimation from "../../components/ui/LoadingAnimation";
 
-import { formatDateTime } from "../../utils/formatDateTime";
+import ScrollDatePicker from "../../components/ui/ScrollDatePicker";
 
-const MedicineScheduleScreen = () => {
-  const datePickerDefaultClassNames = getDefaultClassNames();
+const PERIOD_CONFIG = {
+  Sáng: {
+    title: "Sáng: 6 - 12h",
+    icon: "☀️",
+    bgColor: "bg-yellow-50", // NativeWind class
+  },
+  Trưa: {
+    title: "Trưa: 12 - 18h",
+    icon: "🌤️",
+    bgColor: "bg-blue-50",
+  },
+  Chiều: {
+    title: "Chiều: 18 - 24h",
+    icon: "🌇",
+    bgColor: "bg-orange-50",
+  },
+  Tối: {
+    title: "Tối: 22 - 24h",
+    icon: "🌙",
+    bgColor: "bg-indigo-100",
+  },
+} as const;
 
-  const [medicineIntakes, setMedicineIntakes] = useState<MedicineIntake[]>([]);
+const MedicineScheduleScreen = ({ navigation }: any) => {
+  const [medicineScheduleIntakes, setMedicineScheduleIntakes] = useState<
+    MedicineScheduleIntake[]
+  >([]);
   const [selectedMedicine, setSelectedMedicine] =
-    useState<MedicineIntake | null>(null);
+    useState<MedicineScheduleIntake | null>(null);
   const [schedules, setSchedules] = useState<MedicineSchedule[]>([]);
 
-  const [beginDate, setBeginDate] = useState<DateType>(new Date());
-  // 3 ngày sau ngày bắt đầu
-  const [endDate, setEndDate] = useState<DateType>(
-    dayjs(beginDate).add(3, "day").toDate()
+  let today = new Date();
+  const [selectedDay, setSelectedDay] = useState<DateType>(
+    new Date(today.getFullYear(), today.getMonth(), today.getDate())
   );
   const [dayPickerModalVisible, setDayPickerModalVisible] = useState(false);
   const [actionModalVisible, setActionModalVisible] = useState(false);
+
+  const [loading, setLoading] = useState(false);
 
   const loadSchedules = async () => {
     const patientId = await getUserID();
@@ -45,25 +76,45 @@ const MedicineScheduleScreen = () => {
       console.error("Không tìm thấy ID bệnh nhân trong storage.");
       return;
     }
-    const data = await fetchMedicineSchedule(
-      patientId,
-      dayjs(beginDate).format("YYYY-MM-DD"),
-      dayjs(endDate).format("YYYY-MM-DD")
-    );
-    setSchedules(data);
+
+    const dayStr = dayjs(selectedDay).format("YYYY-MM-DD");
+    // const threeDay = new Date();
+    // threeDay.setDate(threeDay.getDate() - 3);
+    // const threeDayStr = dayjs(threeDay).format("YYYY-MM-DD");
+
+    const data = await fetchMedicineSchedule(patientId, dayStr, dayStr);
     console.log("Lịch trình thuốc:", data);
-    setMedicineIntakes(data[0]?.intakes || []);
+
+    setSchedules(data);
+
+    const allIntakes = data.flatMap((schedule) =>
+      schedule.intakes.map((intake) => ({
+        ...intake,
+        diagnosisResultId: schedule.diagnosisResultId,
+        startDate: schedule.startDate,
+        endDate: schedule.endDate,
+        status: schedule.status,
+        note: schedule.note,
+        prescriptionName: schedule.prescriptionName,
+        patientId: schedule.patientId,
+      }))
+    );
+    setMedicineScheduleIntakes(allIntakes);
   };
 
   useEffect(() => {
     loadSchedules();
-  }, []);
+  }, [selectedDay]);
 
-  const handleLongPress = (medicine: MedicineIntake) => {
-    setSelectedMedicine(medicine);
+  const handleLongPress = (medicine: MedicineScheduleIntake) => {
     setActionModalVisible(true);
+    setSelectedMedicine(medicine);
   };
 
+  const handleExpand = (medicine: MedicineScheduleIntake) => {
+    setActionModalVisible(true);
+    setSelectedMedicine(medicine);
+  };
   const markAsTaken = async () => {
     try {
       if (!selectedMedicine) return;
@@ -103,49 +154,88 @@ const MedicineScheduleScreen = () => {
   };
 
   return (
-    <View className="flex-1 bg-white p-4">
-      <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-2xl font-bold">
-          Ngày: {formatDateTime(beginDate, "date")} đến{" "}
-          {formatDateTime(endDate, "date")}
-        </Text>
-
-        <TouchableOpacity onPress={() => setDayPickerModalVisible(true)}>
-          <FontAwesome name="calendar" size={24} color="blue" />
-        </TouchableOpacity>
+    <View className="flex-1 bg-white">
+      <View className="mb-5">
+        {/* <View className="flex-row items-center ml-2">
+          <Text className="text-xl mr-2">🗓️</Text>
+          <Text className="text-lg font-bold">Ngày</Text>
+        </View> */}
+        <View className="flex-row justify-between items-center mt-2">
+          <ScrollDatePicker onDateSelect={setSelectedDay} />
+        </View>
       </View>
-      {medicineIntakes.length === 0 && (
+
+      {medicineScheduleIntakes.length === 0 ? (
         <View className="flex-1 justify-center items-center">
-          <Text className=" text-gray-500 mt-4">
+          <Text className="text-gray-500 mt-5">
             Không có lịch uống thuốc nào trong ngày này.
           </Text>
         </View>
-      )}
-      {/* Danh sách chưa uống */}
-      {medicineIntakes.some((item) => item.takenAt === null) && (
-        <>
-          <Text className="text-lg font-bold">Chưa uống:</Text>
-          <FlatList
-            data={medicineIntakes.filter((item) => item.takenAt === null)}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <MedicineItem medicine={item} onPress={handleLongPress} />
-            )}
-          />
-        </>
-      )}
-      {/* Danh sách đã uống */}
-      {medicineIntakes.some((item) => item.takenAt !== null) && (
-        <>
-          <Text className="text-lg font-bold mt-2">Đã uống:</Text>
-          <FlatList
-            data={medicineIntakes.filter((item) => item.takenAt !== null)}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <MedicineItem medicine={item} onPress={handleLongPress} />
-            )}
-          />
-        </>
+      ) : (
+        <ScrollView className="mb-5">
+          {/* Hiển thị theo trạng thái uống */}
+          {[
+            {
+              label: "Chưa uống",
+              filter: (item: MedicineScheduleIntake) => item.takenAt === null,
+            },
+            {
+              label: "Đã uống",
+              filter: (item: MedicineScheduleIntake) => item.takenAt !== null,
+            },
+          ].map(({ label, filter }) => {
+            const medicines = medicineScheduleIntakes.filter(filter);
+
+            if (medicines.length === 0) return null;
+
+            return (
+              <View key={label} className="mb-5 px-2 rounded-lg">
+                {/* Header: Chưa uống / Đã uống */}
+                <View className="flex-row items-center mb-2 ml-2">
+                  <Text className="text-lg font-bold">{label}</Text>
+                </View>
+
+                {/* Bên trong chia theo buổi */}
+                {["Sáng", "Trưa", "Chiều", "Tối"].map((period) => {
+                  const medicinesByPeriod = medicines.filter(
+                    (item) => item.period === period
+                  );
+
+                  if (medicinesByPeriod.length === 0) return null;
+
+                  const { title, icon } = PERIOD_CONFIG[period] || {};
+
+                  return (
+                    <View key={period} className="mb-4">
+                      {/* Buổi uống */}
+                      <View className="flex-row items-center mb-1 ml-1">
+                        <Text className="text-xl mr-2">{icon}</Text>
+                        <Text className="text-base font-semibold">{title}</Text>
+                      </View>
+
+                      {/* Danh sách thuốc */}
+                      <View className="px-4 py-2 rounded-2xl">
+                        {medicinesByPeriod.map((item, index) => (
+                          <MedicineItem
+                            key={item.id}
+                            medicine={item}
+                            onPress={() => {
+                              navigation.navigate("MedicineDetailScreen", {
+                                scheduleId: item.id,
+                              });
+                            }}
+                            onExpand={handleExpand}
+                            showDivider={index !== medicinesByPeriod.length - 1}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            );
+          })}
+        </ScrollView>
       )}
       {/* Modal chọn ngày */}
       <Modal
@@ -154,53 +244,19 @@ const MedicineScheduleScreen = () => {
         animationOut="zoomOut"
       >
         <View className="justify-center items-center bg-white p-4 rounded-lg">
-          {/* <DateTimePicker
-            classNames={{
-              ...datePickerDefaultClassNames,
-              today: "border-amber-500", // Add a border to today's date
-              selected: "bg-amber-500 border-amber-500", // Highlight the selected day
-              selected_label: "text-white", // Highlight the selected day label
-              day: `${datePickerDefaultClassNames.day} hover:bg-amber-100`, // Change background color on hover
-              disabled: "opacity-50", // Make disabled dates appear more faded
-            }}
+          <DateTimePicker
             mode="single"
             date={selectedDay}
             onChange={({ date }) => setSelectedDay(date)}
-            locale="vi"
-          /> */}
-
-          <DateTimePicker
-            classNames={{
-              ...datePickerDefaultClassNames,
-              today: "border-blue-500",
-              range_start: "bg-blue-500 text-white rounded-l-full",
-              range_end: "bg-blue-500 text-white rounded-r-full",
-              range_middle: "bg-blue-100 text-black",
-              range_fill: "bg-blue-100",
-              range_fill_weekstart: "bg-blue-100",
-              range_fill_weekend: "bg-blue-100",
-              selected: "bg-blue-500 border-blue-500",
-              selected_label: "text-white",
-              day: `${datePickerDefaultClassNames.day} hover:bg-blue-50`,
-              disabled: "opacity-50",
-            }}
-            mode="range"
-            startDate={beginDate}
-            endDate={endDate}
-            onChange={({ startDate, endDate }) => {
-              console.log("startDate:", startDate, "endDate:", endDate);
-              setBeginDate(startDate);
-              setEndDate(endDate);
+            styles={{
+              ...getDefaultStyles(),
             }}
             locale="vi"
           />
           <View className="flex-row justify-end w-full mt-4">
             <TouchableOpacity
               className="bg-gray-900 px-6 py-3 rounded-full"
-              onPress={() => {
-                loadSchedules();
-                setDayPickerModalVisible(false);
-              }}
+              onPress={() => setDayPickerModalVisible(false)}
             >
               <Text className="text-white font-semibold">Xác nhận</Text>
             </TouchableOpacity>

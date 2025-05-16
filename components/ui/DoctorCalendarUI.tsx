@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import LoadingAnimation from "./LoadingAnimation";
 import { set } from "date-fns";
 import { LichNgay, GioHen } from "../../types/types";
 import { formatDateTime } from "../../utils/formatDateTime";
+import dayjs from "dayjs"; // nếu chưa import
 
 interface CalendarUIProps {
   doctorId: string;
@@ -21,7 +22,7 @@ interface CalendarUIProps {
   handleContinue: () => void;
 }
 
-const CalendarUI: React.FC<CalendarUIProps> = ({
+const DoctorCalendarUI: React.FC<CalendarUIProps> = ({
   doctorId,
   isOnlineMethod,
   onSelectDateTime,
@@ -30,7 +31,9 @@ const CalendarUI: React.FC<CalendarUIProps> = ({
   const [calendarData, setCalendarData] = useState<LichNgay[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<GioHen>();
-  const [currentMonth, setCurrentMonth] = useState("03/2025");
+  const [currentMonth, setCurrentMonth] = useState(dayjs().format("MM/YYYY"));
+
+  const scrollViewRef = useRef<FlatList | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -244,4 +247,4 @@ const CalendarUI: React.FC<CalendarUIProps> = ({
   );
 };
 
-export default CalendarUI;
+export default DoctorCalendarUI;

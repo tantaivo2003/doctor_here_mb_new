@@ -2,6 +2,40 @@ import { familyMembers, mockPendingInvites } from "../types/types";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 
+export const createRelationship = async (
+  ptID: string,
+  phone: string,
+  relationship: string
+) => {
+  const url = `${API_BASE_URL}/api/relative`; // Thay bằng URL của API thực tế
+
+  const bodyData = {
+    ptID,
+    phone,
+    relationship,
+  };
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(bodyData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log("API response data:", data);
+    return data;
+  } catch (err) {
+    throw err; // Hoặc bạn có thể xử lý lỗi theo cách khác tùy nhu cầu
+  }
+};
+
 export const fetchFamilyMembers = async (ptID: string) => {
   try {
     const response = await fetch(

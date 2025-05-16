@@ -10,7 +10,11 @@ import HealthDataInputModal from "../../components/HealthMetrics/HealthDataInput
 import SelectField from "../../components/ui/SelectField";
 
 // Local storage
-import { storeHealthData, getHealthData } from "../../services/storage";
+import {
+  storeHealthData,
+  getHealthData,
+  getUserID,
+} from "../../services/storage";
 
 // Health Connect Permissions & Initialization
 import { BMI_PERMISSIONS } from "../../services/healthConnect/permissions";
@@ -24,7 +28,6 @@ import { initializeHealthConnect } from "../../services/healthConnect/healthConn
 // Health Records
 import {
   fetchHealthRecords,
-  fetchLatestHealthRecord,
   getTodayHealthRecord,
   getActivityRecord,
 } from "../../utils/readHealthRecords";
@@ -34,12 +37,30 @@ import {
   fetchAndGroupHealthRecords,
 } from "../../utils/groupHealthRecordsByPeriod";
 
+import {
+  fetchBMIData,
+  fetchHeightData,
+  fetchWeightData,
+  fetchLatestHealthRecord,
+  postBMI,
+  postSimpleMetric,
+} from "../../api/HealthMetrics";
+
 // Utility functions
-import { calculateBMI } from "../../utils/calHealthMetrics";
-import { convertOptionToInterval } from "../../utils/validators";
+import {
+  calculateBMI,
+  calculateBMIRecords,
+} from "../../utils/calHealthMetrics";
+import {
+  convertOptionToInterval,
+  mapDisplayOptionToType,
+} from "../../utils/validators";
+import { useTimeFilter } from "./useTimeFilter";
+import TimeNavigator from "../../components/ui/TimeNavigator";
 // Types
 import { HealthRecord } from "../../types/types";
-
+import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
+import { G } from "react-native-svg";
 const displayOptions = [
   { title: "Tuần", icon: "calendar-week" },
   { title: "Tháng", icon: "calendar-month" },
@@ -68,88 +89,183 @@ const BMIScreen = ({ navigation }: any) => {
   const [changeHeightValue, setChangeHeightValue] = useState("");
   const [changeWeightValue, setChangeWeightValue] = useState("");
 
-  const init = async () => {
-    // Khởi tạo Health Connect
-    await initializeHealthConnect();
-    const hasPermission = await checkAndRequestPermissions(BMI_PERMISSIONS);
-    return hasPermission;
-  };
-  // Lấy dữ liệu đã lưu khi mở màn hình
-  const fetchLatestData = async () => {
-    const latestWeightRecord = await fetchLatestHealthRecord("Weight");
-    const latestHeightRecord = await fetchLatestHealthRecord("Height");
+  const { currentDate, getStartEndDate, handleChange } = useTimeFilter();
+  const [displayOption, setDisplayOption] = useState("Tuần");
 
-    if (latestWeightRecord) {
-      setLatestWeightRecord(latestWeightRecord);
-    }
-    if (latestHeightRecord) {
-      setLatestHeightRecord(latestHeightRecord);
-    }
+  const {
+    currentDate: heightDate,
+    getStartEndDate: getHeightStartEndDate,
+    handleChange: handleHeightChange,
+  } = useTimeFilter();
 
-    // set bmi
-    if (latestWeightRecord && latestHeightRecord) {
-      const bmi = calculateBMI(
-        latestHeightRecord.value,
-        latestWeightRecord.value
-      );
+  const {
+    currentDate: weightDate,
+    getStartEndDate: getWeightStartEndDate,
+    handleChange: handleWeightChange,
+  } = useTimeFilter();
 
-      setBmi(bmi);
-      await storeHealthData("bmi_records", bmi); // Lưu BMI vào local storage
-    }
-  };
-  const fetchRecords = async () => {
-    const now = new Date();
-    const past = new Date();
-    past.setMonth(now.getMonth() - 12); // lấy trong 12 tháng gần nhất
+  // const init = async () => {
+  //   // Khởi tạo Health Connect
+  //   await initializeHealthConnect();
+  //   const hasPermission = await checkAndRequestPermissions(BMI_PERMISSIONS);
+  //   return hasPermission;
+  // };
 
-    const heightInterval = convertOptionToInterval(heightDisplayOption);
-    const weightInterval = convertOptionToInterval(weightDisplayOption);
-
-    const heightData = await fetchAndGroupHealthRecords(
-      "Height",
-      past.toISOString(),
-      now.toISOString(),
-      heightInterval
-    );
-
-    const weightData = await fetchAndGroupHealthRecords(
-      "Weight",
-      past.toISOString(),
-      now.toISOString(),
-      weightInterval
-    );
-
-    if (heightData) {
-      setHeightRecords(heightData);
-    }
-    if (weightData) {
-      setWeightRecords(weightData);
-    }
-
-    console.log("heightData", heightData);
-    console.log("weightData", weightData);
-  };
-
+  // Lấy dữ liệu mới nhất đã lưu khi mở màn hình
   useEffect(() => {
-    const initAndFetch = async () => {
+    const getHeightAndWeight = async () => {
       setLoading(true);
-      const hasPermission = await init();
-      if (!hasPermission) {
-        navigation.navigate("Home");
+      const ptID = await getUserID();
+      if (!ptID) {
+        console.error("Không tìm thấy ID người dùng");
         return;
       }
-      fetchLatestData();
-      fetchRecords();
 
+      const height = await fetchLatestHealthRecord("height", ptID);
+      const weight = await fetchLatestHealthRecord("weight", ptID);
+
+      if (height && !Array.isArray(height) && "value" in height) {
+        setLatestHeightRecord(height as HealthRecord);
+      }
+
+      if (weight && !Array.isArray(weight) && "value" in weight) {
+        setLatestWeightRecord(weight as HealthRecord);
+      }
+      if (
+        height &&
+        !Array.isArray(height) &&
+        "value" in height &&
+        weight &&
+        !Array.isArray(weight) &&
+        "value" in weight
+      ) {
+        const newBmi = calculateBMI(height.value / 100, weight.value);
+        setBmi(newBmi);
+      }
       setLoading(false);
     };
 
-    initAndFetch();
+    getHeightAndWeight();
   }, []);
 
+  // Lấy dữ liệu chiều cao và cân nặng khi thay đổi thời gian
   useEffect(() => {
-    fetchRecords();
-  }, [heightDisplayOption, weightDisplayOption]);
+    const loadHeight = async () => {
+      const heightData = await fetchHeight(
+        heightDisplayOption,
+        getHeightStartEndDate
+      );
+      if (heightData) {
+        setHeightRecords(heightData);
+        console.log("heightData:", heightData);
+      }
+    };
+
+    loadHeight();
+  }, [heightDisplayOption, heightDate]);
+
+  const fetchHeight = async (
+    displayOption: string,
+    getStartEndDate: (displayOption: string) => {
+      startDate: Date;
+      endDate: Date;
+    }
+  ) => {
+    try {
+      setLoading(true);
+      const ptID = await getUserID();
+      if (!ptID) {
+        console.error("Không tìm thấy ID người dùng");
+        return null;
+      }
+
+      const type = mapDisplayOptionToType(displayOption);
+      const { startDate, endDate } = getStartEndDate(displayOption);
+
+      const heightData = await fetchHeightData(ptID, type, startDate, endDate);
+      return heightData;
+    } catch (err) {
+      console.error("Lỗi khi tải dữ liệu chiều cao", err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const loadWeight = async () => {
+      const weightData = await fetchWeight(
+        weightDisplayOption,
+        getWeightStartEndDate
+      );
+      if (weightData) {
+        setWeightRecords(weightData);
+        console.log("weightData:", weightData);
+      }
+    };
+
+    loadWeight();
+  }, [weightDisplayOption, weightDate]);
+  const fetchWeight = async (
+    displayOption: string,
+    getStartEndDate: (displayOption: string) => {
+      startDate: Date;
+      endDate: Date;
+    }
+  ) => {
+    try {
+      setLoading(true);
+      const ptID = await getUserID();
+      if (!ptID) {
+        console.error("Không tìm thấy ID người dùng");
+        return;
+      }
+
+      const type = mapDisplayOptionToType(displayOption);
+      const { startDate, endDate } = getStartEndDate(displayOption);
+
+      const weightData = await fetchWeightData(ptID, type, startDate, endDate);
+      return weightData;
+    } catch (err) {
+      console.error("Lỗi khi tải dữ liệu cân nặng", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Lấy dữ liệu BMI khi thay đổi thời gian
+  // Lấy dữ liệu BMI khi thay đổi thời gian
+  useEffect(() => {
+    const loadBMI = async () => {
+      setLoading(true);
+      try {
+        const weightData = await fetchWeight(displayOption, getStartEndDate);
+        const heightData = await fetchHeight(displayOption, getStartEndDate);
+
+        if (weightData) {
+          console.log("weightData:", weightData);
+        }
+        if (heightData) {
+          console.log("heightData:", heightData);
+        }
+
+        if (weightData && heightData) {
+          const bmiData = calculateBMIRecords(heightData, weightData);
+          setBmiRecords(bmiData);
+          console.log("bmiData:", bmiData);
+        } else {
+          setBmiRecords([]);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tính BMI:", error);
+        setBmiRecords([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBMI();
+  }, [displayOption, currentDate]);
 
   // Xử lý lưu dữ liệu
   const handleSaveData = async (value: string, label: string) => {
@@ -157,29 +273,63 @@ const BMIScreen = ({ navigation }: any) => {
 
     try {
       const now = new Date().toISOString();
+      const ptID = await getUserID();
+      if (!ptID) {
+        Toast.show({
+          type: "error",
+          text1: "Không tìm thấy ID người dùng!",
+        });
+        return;
+      }
 
       if (label === "Chiều cao") {
-        const heightValue = parseFloat(value) / 100; // cm -> m
-        const recordId = await insertHealthRecord("Height", heightValue);
+        const heightValue = parseFloat(value);
+        if (isNaN(heightValue)) {
+          Toast.show({
+            type: "error",
+            text1: "Giá trị nhịp tim không hợp lệ!",
+          });
+          return;
+        }
 
+        // Them vao health connect
+        const recordId = await insertHealthRecord(
+          "Height",
+          heightValue / 100,
+          now
+        ); // cm -> m
+
+        // Thêm vào server:
+        await postSimpleMetric(ptID, "height", heightValue, now);
         setLatestHeightRecord({ value: heightValue, date: now });
-        setChangeHeightValue("");
-        setIsChangeHeight(false);
         Toast.show({ type: "success", text1: "Đã lưu chiều cao!" });
       } else if (label === "Cân nặng") {
         const weightValue = parseFloat(value);
-        const recordId = await insertHealthRecord("Weight", weightValue);
+        if (isNaN(weightValue)) {
+          Toast.show({
+            type: "error",
+            text1: "Giá trị nhịp tim không hợp lệ!",
+          });
+          return;
+        }
 
-        setLatestWeightRecord({ value: weightValue, date: now });
-        setChangeWeightValue("");
-        setIsChangeWeight(false);
+        // Them vao health connect
+        const recordId = await insertHealthRecord(
+          "Weight",
+          weightValue / 100,
+          now
+        ); // cm -> m
+
+        // Thêm vào server:
+        await postSimpleMetric(ptID, "weight", weightValue, now);
+        setLatestHeightRecord({ value: weightValue, date: now });
         Toast.show({ type: "success", text1: "Đã lưu cân nặng!" });
       }
 
       // Cập nhật BMI nếu đủ cả height và weight, sử dụng hàm calculateBMI
       const height =
         (label === "Chiều cao"
-          ? parseFloat(value) / 100
+          ? parseFloat(value)
           : latestHeightRecord?.value) ?? null;
       const weight =
         (label === "Cân nặng"
@@ -187,7 +337,7 @@ const BMIScreen = ({ navigation }: any) => {
           : latestWeightRecord?.value) ?? null;
 
       if (height && weight) {
-        const newBmi = calculateBMI(height, weight);
+        const newBmi = calculateBMI(height / 100, weight);
         setBmi(newBmi);
       }
     } catch (error) {
@@ -195,6 +345,7 @@ const BMIScreen = ({ navigation }: any) => {
       Toast.show({ type: "error", text1: "Lỗi khi lưu dữ liệu!" });
     } finally {
       setLoading(false);
+      navigation.replace("BMIScreen");
     }
   };
 
@@ -235,88 +386,6 @@ const BMIScreen = ({ navigation }: any) => {
         <LoadingAnimation />
       ) : (
         <>
-          {/* Nút để thu hồi quyền*/}
-          <TouchableOpacity
-            className="px-4 py-2 mb-5 bg-gray-100 rounded-full"
-            onPress={() => {
-              readGrantedPermissions();
-            }}
-          >
-            <Text className="text-gray-900">Danh sách quyền</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="px-4 py-2 mb-5 bg-gray-100 rounded-full"
-            onPress={async () => {
-              await checkAndRequestPermissions(BMI_PERMISSIONS);
-            }}
-          >
-            <Text className="text-gray-900">Xin cấp quyền</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="px-4 py-2 mb-5 bg-gray-100 rounded-full"
-            onPress={async () => {
-              const rawRecords = await fetchHealthRecords(
-                "Height", // 👈 bạn có thể thay bằng "Weight", ...
-                "2025-04-01T00:00:00.000Z",
-                "2025-04-24T23:59:59.999Z"
-              );
-
-              if (!rawRecords) {
-                console.log("Không đọc được dữ liệu.");
-                return;
-              }
-
-              // 🧠 Gọi hàm xử lý nhóm dữ liệu
-              const grouped = groupHealthRecordsByPeriod(
-                rawRecords, // dữ liệu đã được xử lý sơ bộ
-                "YEARS", // 👈 thay đổi theo "DAYS" | "WEEKS" | "MONTHS" | "YEARS"
-                "Height" // 👈 loại chỉ số để xử lý thông minh hơn
-              );
-
-              console.log("✅ Dữ liệu đã nhóm:", grouped);
-            }}
-          >
-            <Text className="text-gray-900">Đọc & Nhóm dữ liệu</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="px-4 py-2 mb-5 bg-gray-100 rounded-full"
-            onPress={async () => {
-              const records = await getActivityRecord(
-                "Steps",
-                "2025-04-22T00:00:00.000Z",
-                "2025-04-24T23:59:59.999Z",
-                "DAYS"
-              );
-              if (records) {
-                // Làm gì đó với records
-                console.log("Tổng số bản ghi:", records.length);
-                console.log("Bản ghi", records);
-              } else {
-                console.log("Không đọc được dữ liệu.");
-              }
-            }}
-          >
-            <Text className="text-gray-900">Đọc dữ liệu 2</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="px-4 py-2 mb-5 bg-gray-100 rounded-full"
-            onPress={async () => {
-              const records = await fetchLatestHealthRecord("Steps");
-              if (records) {
-                // Làm gì đó với records
-                console.log("Tổng số bản ghi:", records.length);
-                console.log("Bản ghi", records);
-              } else {
-                console.log("Không đọc được dữ liệu.");
-              }
-            }}
-          >
-            <Text className="text-gray-900">Đọc dữ liệu mới nhất</Text>
-          </TouchableOpacity>
           {/* Thông tin chiều cao và cân nặng */}
           <View className="flex-row justify-between mb-4">
             <HealthMetricCard
@@ -324,7 +393,7 @@ const BMIScreen = ({ navigation }: any) => {
               unit="cm"
               value={
                 latestHeightRecord
-                  ? (latestHeightRecord.value * 100).toFixed(0)
+                  ? latestHeightRecord.value.toFixed(0)
                   : undefined
               }
               imageSource={require("../../assets/healthMetrics/height.png")}
@@ -354,50 +423,90 @@ const BMIScreen = ({ navigation }: any) => {
             </View>
           )}
           {/* Biểu đồ height */}
-          {heightRecords.length > 0 && (
-            <>
-              <View className="flex-row justify-between items-center">
-                <View className="flex-1">
-                  <Text className="text-lg font-bold">Biểu đồ chiều cao</Text>
-                </View>
-                <View className="w-40">
-                  <SelectField
-                    label=""
-                    data={displayOptions}
-                    value={heightDisplayOption || ""}
-                    placeholder="Kiểu hiển thị"
-                    onChange={(val) => setHeightDisplayOption(val)}
-                  />
-                </View>
-              </View>
-              <HealthMetricsLineChart healthMetricsLineData={heightRecords} />
-            </>
-          )}
 
-          {weightRecords.length > 0 && (
-            <>
-              <View className="flex-row justify-between items-center">
-                <View className="flex-1">
-                  <Text className="text-lg font-bold">Biểu đồ cân nặng</Text>
-                </View>
-                <View className="w-40">
-                  <SelectField
-                    label=""
-                    data={displayOptions}
-                    value={weightDisplayOption || ""}
-                    placeholder="Kiểu hiển thị"
-                    onChange={(val) => setWeightDisplayOption(val)}
-                  />
-                </View>
+          <>
+            <View className="flex-row justify-between items-center">
+              <View className="flex-1">
+                <Text className="text-lg font-bold">Biểu đồ chiều cao</Text>
               </View>
+              <View className="w-40">
+                <SelectField
+                  label=""
+                  data={displayOptions}
+                  value={heightDisplayOption || ""}
+                  placeholder="Kiểu hiển thị"
+                  onChange={(val) => setHeightDisplayOption(val)}
+                />
+              </View>
+            </View>
+            <TimeNavigator
+              displayOption={heightDisplayOption}
+              currentDate={heightDate}
+              onChange={handleHeightChange}
+            />
+            {heightRecords.length > 0 ? (
+              <HealthMetricsLineChart healthMetricsLineData={heightRecords} />
+            ) : (
+              <View className="items-center justify-center my-10">
+                <Text className="text-gray-500">Không có dữ liệu</Text>
+              </View>
+            )}
+          </>
+
+          <>
+            <View className="flex-row justify-between items-center">
+              <View className="flex-1">
+                <Text className="text-lg font-bold">Biểu đồ cân nặng</Text>
+              </View>
+              <View className="w-40">
+                <SelectField
+                  label=""
+                  data={displayOptions}
+                  value={weightDisplayOption || ""}
+                  placeholder="Kiểu hiển thị"
+                  onChange={(val) => setWeightDisplayOption(val)}
+                />
+              </View>
+            </View>
+            <TimeNavigator
+              displayOption={weightDisplayOption}
+              currentDate={weightDate}
+              onChange={handleWeightChange}
+            />
+            {weightRecords.length > 0 ? (
               <HealthMetricsLineChart healthMetricsLineData={weightRecords} />
-            </>
-          )}
-          {bmiRecords.length > 0 && (
-            <>
-              <Text className="text-lg font-bold mb-4">Biểu đồ BMI</Text>
-              <HealthMetricsLineChart healthMetricsLineData={bmiRecords} />
-            </>
+            ) : (
+              <View className="items-center justify-center my-10">
+                <Text className="text-gray-500">Không có dữ liệu</Text>
+              </View>
+            )}
+          </>
+
+          <View className="flex-row justify-between items-center">
+            <View className="flex-1">
+              <Text className="text-lg font-bold">Biểu đồ BMI</Text>
+            </View>
+            <View className="w-40">
+              <SelectField
+                label=""
+                data={displayOptions}
+                value={displayOption || ""}
+                placeholder="Kiểu hiển thị"
+                onChange={(val) => setDisplayOption(val)}
+              />
+            </View>
+          </View>
+          <TimeNavigator
+            displayOption={displayOption}
+            currentDate={currentDate}
+            onChange={handleChange}
+          />
+          {bmiRecords.length > 0 ? (
+            <HealthMetricsLineChart healthMetricsLineData={bmiRecords} />
+          ) : (
+            <View className="items-center justify-center my-10">
+              <Text className="text-gray-500">Không có dữ liệu</Text>
+            </View>
           )}
         </>
       )}

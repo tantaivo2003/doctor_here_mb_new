@@ -1,4 +1,4 @@
-import { Doctor } from "../types/types";
+import { Doctor, Specialization } from "../types/types";
 const API_BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 
 export const getAllDoctors = async (): Promise<Doctor[]> => {
@@ -28,6 +28,27 @@ export const getAllDoctors = async (): Promise<Doctor[]> => {
     }));
   } catch (error) {
     console.error("Lỗi API getAllDoctors:", error);
+    return [];
+  }
+};
+
+export const fetchSpecializations = async (): Promise<Specialization[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/doctor/specialization`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Không thể lấy danh sách chuyên khoa");
+    }
+
+    const data: Specialization[] = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Lỗi khi gọi API chuyên khoa:", error);
     return [];
   }
 };

@@ -35,7 +35,7 @@ export const FamilyMemberItem: FC<FamilyMemberItemProps> = ({
           {member.ho_va_ten}
         </Text>
         <Text className="text-gray-500 text-sm">
-          Thân phận: {member.than_phan}
+          Quan hệ: {member.than_phan}
         </Text>
       </View>
       <TouchableOpacity onPress={onChangeStatus}>

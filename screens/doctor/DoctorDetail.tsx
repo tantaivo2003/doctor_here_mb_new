@@ -14,6 +14,9 @@ import { getDoctorRatings } from "../../api/Rating";
 import { Rating } from "../../types/types";
 import { StarRatingDisplay } from "react-native-star-rating-widget";
 import DoctorRating from "./DoctorRating";
+import { getConversationByDoctorAndPatient } from "../../api/Message";
+import { getUserID } from "../../services/storage";
+import Toast from "react-native-toast-message";
 
 import LoadingAnimation from "../../components/ui/LoadingAnimation";
 export default function DoctorDetail({ navigation, route }: any) {
@@ -27,11 +30,40 @@ export default function DoctorDetail({ navigation, route }: any) {
       const ratings = await getDoctorRatings(doctorId);
       setRatings(ratings);
       setIsLoading(false);
+      console.log(doctor);
     };
 
     fetchRatings();
   }, [doctor.id]);
 
+  const handleSendMessage = async () => {
+    const userId = await getUserID();
+    const doctorID = doctor.id;
+    if (!userId) {
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Vui lòng đăng nhập để sử dụng tính năng này.",
+      });
+
+      return;
+    }
+    const conversation = await getConversationByDoctorAndPatient(
+      doctorID,
+      userId
+    );
+    console.log("conversation", conversation);
+
+    navigation.navigate("ChatStack", {
+      screen: "ChatDetailScreen",
+      params: {
+        convID: conversation ? conversation.id : null,
+        doctorID: doctorID,
+        doctorName: doctor.name,
+        doctorAvtUrl: doctor.image,
+      },
+    });
+  };
   return (
     <View className="flex-1 bg-white">
       <ScrollView
@@ -90,7 +122,10 @@ export default function DoctorDetail({ navigation, route }: any) {
 
       {/* Thanh nút cố định */}
       <View className="absolute bottom-0 left-0 right-0 p-4 bg-white shadow-lg">
-        <TouchableOpacity className="bg-teal-500 py-3 rounded-full items-center mb-2">
+        <TouchableOpacity
+          className="bg-teal-500 py-3 rounded-full items-center mb-2"
+          onPress={handleSendMessage}
+        >
           <Text className="text-white font-semibold">Nhắn tin với bác sĩ</Text>
         </TouchableOpacity>
 

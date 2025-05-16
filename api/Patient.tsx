@@ -23,8 +23,8 @@ export const createPatientProfile = async (data: {
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Lỗi tạo hồ sơ: ${error}`);
+    const error = await response.json();
+    throw new Error(`Lỗi tạo hồ sơ: ${error.message}`);
   }
 
   return await response.json(); // trả về { id, dia_chi, ma_benh_nhan }

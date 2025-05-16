@@ -19,13 +19,13 @@ export const groupHealthRecordsByPeriod = (
 
     switch (periodType) {
       case "DAYS":
-        key = m.format("YYYY-MM-DD");
+        key = m.format("DD/MM");
         break;
       case "WEEKS":
-        key = m.format("GGGG-[W]WW");
+        key = m.format("[W]WW/YYYY");
         break;
       case "MONTHS":
-        key = m.format("YYYY-MM");
+        key = m.format("MM");
         break;
       case "YEARS":
         key = m.format("YYYY");
