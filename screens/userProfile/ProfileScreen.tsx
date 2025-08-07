@@ -1,20 +1,35 @@
 import React, { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { View, Text, TouchableOpacity, Image } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  Switch,
+  Linking,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { getAuthData, storeAvt } from "../../services/storage";
-import { fetchPatientDetail } from "../../api/Patient";
+import {
+  fetchPatientDetail,
+  getShareAllStatus,
+  updateShareAllStatus,
+} from "../../api/Patient";
 import { clearAsyncStorage } from "../../services/storage";
 import { useAuth } from "../../context/AuthContext";
 import LoadingModal from "../../components/ui/LoadingModal";
 import MenuItem from "../../components/ui/MenuItem";
+import { getUserID } from "../../services/storage";
+import { set } from "date-fns";
+
 export default function ProfileScreen({ navigation }: any) {
   const { logout } = useAuth();
   const [avatar, setAvatar] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
+  const [isShared, setIsShared] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const HealthMetricsMenu = [
@@ -66,7 +81,20 @@ export default function ProfileScreen({ navigation }: any) {
           setLoading(false);
         }
       };
+
+      const fetchShareStatus = async () => {
+        const userId = await getUserID();
+        if (!userId) {
+          // console.error("Không tìm thấy userId");
+          return;
+        }
+        const isShared = await getShareAllStatus(userId);
+        setIsShared(isShared);
+        console.log("Kết quả chia sẻ:", isShared); // true hoặc false
+      };
+
       fetchAvatar();
+      fetchShareStatus();
     }, [])
   );
 
@@ -74,6 +102,20 @@ export default function ProfileScreen({ navigation }: any) {
     // Xóa thông tin người dùng khỏi AsyncStorage
     await clearAsyncStorage();
     logout();
+  };
+
+  const handleToggleShare = async (newState: boolean) => {
+    try {
+      setIsShared(newState); // cập nhật UI ngay lập tức
+      const userId = await getUserID();
+      if (!userId) {
+        return;
+      }
+      const result = await updateShareAllStatus(userId, newState);
+    } catch (error) {
+      console.log("Không thể cập nhật trạng thái chia sẻ");
+      setIsShared(!newState); // rollback nếu lỗi
+    }
   };
 
   return (
@@ -99,6 +141,20 @@ export default function ProfileScreen({ navigation }: any) {
 
           {/* Các mục */}
           <View className="mt-8">
+            <TouchableOpacity className="flex-row items-center justify-between py-4 border-b border-gray-100">
+              <View className="flex-row items-center">
+                <AntDesign name="sharealt" size={22} color="#F59E0B" />
+                <Text className="ml-4 text-lg font-medium text-gray-600">
+                  Chia sẻ kết quả khám bệnh
+                </Text>
+              </View>
+              <Switch
+                value={isShared}
+                trackColor={{ false: "#D1D5DB", true: "#4F46E5" }} // Màu thanh trượt
+                thumbColor={isShared ? "#fff" : "#f4f3f4"} // Màu nút tròn
+                onValueChange={handleToggleShare}
+              />
+            </TouchableOpacity>
             <MenuItem
               icon="person"
               title="Thông tin cá nhân"
@@ -115,15 +171,17 @@ export default function ProfileScreen({ navigation }: any) {
             <MenuItem
               icon="help-circle"
               title="Hỗ trợ"
-              onPress={() => navigation.navigate("NotificationTest")}
+              onPress={() =>
+                Linking.openURL("https://www.facebook.com/tan.tai.vo.399892")
+              }
               color="#FBBF24" // vàng nhạt
             />
-            <MenuItem
+            {/* <MenuItem
               icon="document-text"
               title="Điều khoản sử dụng"
               onPress={() => navigation.navigate("TermsOfUse")}
               color="#FBBF24" // hồng nhạt
-            />
+            /> */}
             <MenuItem
               icon="log-out"
               title="Đăng xuất"

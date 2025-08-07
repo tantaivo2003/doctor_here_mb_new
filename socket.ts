@@ -27,4 +27,19 @@ export const onMessageReceived = (callback: (message: string) => void) => {
   socket.on("chat_message", callback);
 };
 
+export const recallMessage = (
+  sender: string,
+  receiver: string,
+  content: string,
+  time: string,
+  type: string,
+  url: string
+) => {
+  socket.emit("recall_message", { sender, receiver, content, time, type, url });
+};
+
+export const onRecallMessage = (callback: (body: string) => void) => {
+  socket.on("recall_message", callback);
+};
+
 export default socket;

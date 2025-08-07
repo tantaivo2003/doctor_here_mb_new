@@ -7,6 +7,8 @@ import {
   ScrollView,
 } from "react-native";
 import { useState, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 import Modal from "react-native-modal";
 import { FontAwesome } from "@expo/vector-icons";
 import DateTimePicker, {
@@ -27,7 +29,7 @@ import MedicineItem from "../../components/medicineSchedule/MedicineItem";
 import { getUserID } from "../../services/storage";
 import Toast from "react-native-toast-message";
 import LoadingAnimation from "../../components/ui/LoadingAnimation";
-
+import { SwipeListView } from "react-native-swipe-list-view";
 import ScrollDatePicker from "../../components/ui/ScrollDatePicker";
 
 const PERIOD_CONFIG = {
@@ -76,7 +78,6 @@ const MedicineScheduleScreen = ({ navigation }: any) => {
       console.error("Không tìm thấy ID bệnh nhân trong storage.");
       return;
     }
-
     const dayStr = dayjs(selectedDay).format("YYYY-MM-DD");
     // const threeDay = new Date();
     // threeDay.setDate(threeDay.getDate() - 3);
@@ -84,7 +85,6 @@ const MedicineScheduleScreen = ({ navigation }: any) => {
 
     const data = await fetchMedicineSchedule(patientId, dayStr, dayStr);
     console.log("Lịch trình thuốc:", data);
-
     setSchedules(data);
 
     const allIntakes = data.flatMap((schedule) =>
@@ -102,9 +102,11 @@ const MedicineScheduleScreen = ({ navigation }: any) => {
     setMedicineScheduleIntakes(allIntakes);
   };
 
-  useEffect(() => {
-    loadSchedules();
-  }, [selectedDay]);
+  useFocusEffect(
+    useCallback(() => {
+      loadSchedules();
+    }, [selectedDay])
+  );
 
   const handleLongPress = (medicine: MedicineScheduleIntake) => {
     setActionModalVisible(true);
@@ -115,10 +117,13 @@ const MedicineScheduleScreen = ({ navigation }: any) => {
     setActionModalVisible(true);
     setSelectedMedicine(medicine);
   };
-  const markAsTaken = async () => {
+
+  const markAsTaken = async (medicineId?: number) => {
     try {
       if (!selectedMedicine) return;
-      const scheduleId = selectedMedicine.id;
+      const scheduleId = medicineId ? medicineId : selectedMedicine.id;
+      // if (!selectedMedicine) return;
+      // const scheduleId = selectedMedicine.id;
       const drankTime = await toggleMedicineSchedule(scheduleId);
       loadSchedules();
       Toast.show({
@@ -172,7 +177,7 @@ const MedicineScheduleScreen = ({ navigation }: any) => {
           </Text>
         </View>
       ) : (
-        <ScrollView className="mb-5">
+        <View className="mb-5">
           {/* Hiển thị theo trạng thái uống */}
           {[
             {
@@ -215,19 +220,52 @@ const MedicineScheduleScreen = ({ navigation }: any) => {
 
                       {/* Danh sách thuốc */}
                       <View className="px-4 py-2 rounded-2xl">
-                        {medicinesByPeriod.map((item, index) => (
-                          <MedicineItem
-                            key={item.id}
-                            medicine={item}
-                            onPress={() => {
-                              navigation.navigate("MedicineDetailScreen", {
-                                scheduleId: item.id,
-                              });
-                            }}
-                            onExpand={handleExpand}
-                            showDivider={index !== medicinesByPeriod.length - 1}
-                          />
-                        ))}
+                        <SwipeListView
+                          data={medicinesByPeriod}
+                          keyExtractor={(item) => item.id.toString()}
+                          renderItem={({ item, index }) => (
+                            <MedicineItem
+                              medicine={item}
+                              onPress={() => {
+                                navigation.navigate("MedicineDetailScreen", {
+                                  scheduleId: item.id,
+                                });
+                              }}
+                              onExpand={handleExpand}
+                              showDivider={
+                                index !== medicinesByPeriod.length - 1
+                              }
+                            />
+                          )}
+                          renderHiddenItem={({ item }) => (
+                            <View className="flex-1 justify-center items-end pr-4">
+                              <View
+                                className={`py-2 px-4 rounded-xl ${
+                                  item.takenAt ? "bg-gray-400" : "bg-green-500"
+                                }`}
+                              >
+                                <Text className="text-white font-bold">
+                                  {item.takenAt
+                                    ? "Chưa uống"
+                                    : "Đánh dấu đã uống"}
+                                </Text>
+                              </View>
+                            </View>
+                          )}
+                          rightOpenValue={-220}
+                          friction={20}
+                          disableRightSwipe
+                          onRowOpen={async (rowKey, rowMap) => {
+                            const medicine = medicinesByPeriod.find(
+                              (m) => m.id.toString() === rowKey
+                            );
+                            if (!medicine) return;
+
+                            setSelectedMedicine(medicine);
+                            await markAsTaken(medicine.id);
+                            rowMap[rowKey]?.closeRow();
+                          }}
+                        />
                       </View>
                     </View>
                   );
@@ -235,7 +273,7 @@ const MedicineScheduleScreen = ({ navigation }: any) => {
               </View>
             );
           })}
-        </ScrollView>
+        </View>
       )}
       {/* Modal chọn ngày */}
       <Modal
@@ -276,7 +314,7 @@ const MedicineScheduleScreen = ({ navigation }: any) => {
               <>
                 <TouchableOpacity
                   className="mb-2 p-2 bg-teal-500 rounded-lg"
-                  onPress={markAsTaken}
+                  onPress={() => markAsTaken()}
                 >
                   <Text className="text-white text-center">
                     Đánh dấu đã uống

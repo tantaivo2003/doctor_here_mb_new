@@ -66,13 +66,28 @@ export default function UpcomingAppointments({ navigation }: any) {
     setSelectedAppointment(appointment);
     setModalVisible(true);
   };
+
+  const isOntime = (startTime: string, endTime: string) => {
+    const now = dayjs(); // Thời gian hiện tại
+    const start = dayjs(startTime).subtract(5, "minute"); // Thời gian bắt đầu - 5 phút
+    const end = dayjs(endTime); // Thời gian kết thúc
+
+    if (now.isBefore(start)) {
+      return false; // Chưa đến thời gian cho phép vào cuộc gọi
+    }
+
+    if (now.isAfter(end)) {
+      return false; // Quá thời gian cho phép vào cuộc gọi
+    }
+
+    return true; // Đúng thời gian cho phép vào cuộc gọi
+  };
   const handleJoinCall = (
     doctorId: string,
     id: string,
     startTime: string,
     endTime: string
   ) => {
-    console.log(endTime);
     const now = dayjs(); // Thời gian hiện tại
     const start = dayjs(startTime).subtract(5, "minute"); // Thời gian bắt đầu - 5 phút
     const end = dayjs(endTime); // Thời gian kết thúc
@@ -309,7 +324,11 @@ export default function UpcomingAppointments({ navigation }: any) {
                   </TouchableOpacity>
                   {/* Nút tham gia*/}
                   <TouchableOpacity
-                    className="mt-4 bg-blue-500 p-2 rounded-full w-1/2"
+                    className={`mt-4 bg-blue-500 p-2 rounded-full w-1/2 ${
+                      isOntime(item.startTime, item.endTime)
+                        ? "bg-blue-500"
+                        : "bg-gray-300"
+                    }`}
                     onPress={() => {
                       handleJoinCall(
                         item.doctorId,
@@ -318,6 +337,7 @@ export default function UpcomingAppointments({ navigation }: any) {
                         item.endTime
                       );
                     }}
+                    disabled={!isOntime(item.startTime, item.endTime)}
                   >
                     <Text className="text-center text-white  font-semibold">
                       Tham gia

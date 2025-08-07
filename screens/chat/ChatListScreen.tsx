@@ -91,7 +91,8 @@ const ChatListScreen: FC = ({ navigation }: any) => {
     convID: number,
     doctorAvtUrl: string,
     doctorID: string,
-    doctorName: string
+    doctorName: string,
+    userID: string
   ) => {
     console.log("Đi tới chat với ID: ", convID);
     navigation.navigate("ChatDetailScreen", {
@@ -99,6 +100,7 @@ const ChatListScreen: FC = ({ navigation }: any) => {
       doctorAvtUrl,
       doctorID,
       doctorName,
+      userID,
     });
   };
 
@@ -198,14 +200,20 @@ const ChatListScreen: FC = ({ navigation }: any) => {
               ),
               isOnline: false,
             }}
-            onPress={() =>
+            onPress={async () => {
+              const userID = await getUserID();
+              if (!userID) {
+                console.log("Chưa có userID");
+                return;
+              }
               handlePressMessage(
                 item.cuoc_hoi_thoai,
                 item.nguoi_dung.avt_url || "",
                 item.nguoi_dung.ma,
-                item.nguoi_dung.ho_va_ten
-              )
-            }
+                item.nguoi_dung.ho_va_ten,
+                userID
+              );
+            }}
           />
         )}
         ListEmptyComponent={

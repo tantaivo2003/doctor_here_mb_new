@@ -61,6 +61,7 @@ export default function DoctorDetail({ navigation, route }: any) {
         doctorID: doctorID,
         doctorName: doctor.name,
         doctorAvtUrl: doctor.image,
+        userID: userId,
       },
     });
   };

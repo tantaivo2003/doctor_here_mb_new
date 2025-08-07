@@ -6,12 +6,18 @@ import {
   TouchableOpacity,
   Image,
   Modal,
+  Pressable,
 } from "react-native";
 import { FC, useEffect, useState, useRef, useLayoutEffect } from "react";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { messagesList, Message } from "../../types/types";
 import { MessageItem } from "../../components/chat/MessageItem";
-import socket, { sendMessage, onMessageReceived } from "../../socket";
+import socket, {
+  sendMessage,
+  onMessageReceived,
+  recallMessage,
+  onRecallMessage,
+} from "../../socket";
 import { set } from "date-fns";
 import * as ImagePicker from "expo-image-picker";
 import { InteractionManager } from "react-native";
@@ -21,22 +27,23 @@ import {
   createConversation,
 } from "../../api/Message";
 import Toast from "react-native-toast-message";
-
+import { MaterialIcons } from "@expo/vector-icons"; // nếu bạn dùng Expo
 const ChatDetailScreen: FC = ({ route, navigation }: any) => {
   const flatListRef = useRef<FlatList>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [inputText, setInputText] = useState("");
   const [files, setFiles] = useState<any[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isRecallModalVisible, setIsRecallModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const { convID, doctorAvtUrl, doctorID, doctorName } = route.params;
+  const { convID, doctorAvtUrl, doctorID, doctorName, userID } = route.params;
   const [conversationID, setConversationID] = useState<string | null>(
     convID || null
   );
 
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [initialScrollDone, setInitialScrollDone] = useState(false); // Biến để kiểm tra lần đầu cuộn xuống cuối danh sách
-  let userID = "BN0000006";
 
   const API_BASE_URL = process.env.EXPO_PUBLIC_SERVER_URL;
 
@@ -88,22 +95,67 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
     // Đăng ký sự kiện mới
     socket.on("chat_message", handleMessageReceived);
 
+    const handleRecallReceived = (body: string) => {
+      let parsedBody = JSON.parse(body);
+
+      console.log("Thu hồi tin nhắn: ", parsedBody);
+
+      setMessages((prevMessages) =>
+        prevMessages.map((message) => {
+          if (
+            message.sender === "bs" &&
+            message.type === parsedBody.kieu_noi_dung &&
+            message.timestamp === parsedBody.thoi_diem_gui
+          ) {
+            return {
+              ...message,
+              type: "recall",
+              content: "",
+            };
+          }
+          return message;
+        })
+      );
+    };
+
+    socket.off("recall_message");
+
+    socket.on("recall_message", handleRecallReceived);
+
     // Cleanup để hủy sự kiện khi component unmount
     return () => {
       socket.off("chat_message", handleMessageReceived);
+      socket.off("recall_message", handleRecallReceived);
     };
   }, []); // Chỉ chạy một lần khi component mount
 
-  // Scroll xuống cuối khi mount lần đầu
-  // useEffect(() => {
-  //   if (messages.length > 0 && !initialScrollDone) {
-  //     // Đợi FlatList render xong
-  //     setTimeout(() => {
-  //       flatListRef.current?.scrollToEnd({ animated: false });
-  //       setInitialScrollDone(true);
-  //     }, 1000); // Hoặc 0 nếu nội dung ít
-  //   }
-  // }, [messages]);
+  const handleRecallMessage = (
+    content: string,
+    time: string,
+    type: string,
+    url: string
+  ) => {
+    if (!conversationID) return;
+
+    setMessages((prevMessages) =>
+      prevMessages.map((message) => {
+        if (
+          message.sender === "bn" &&
+          message.type === type &&
+          message.timestamp === time
+        ) {
+          return {
+            ...message,
+            type: "recall",
+            content: "",
+          };
+        }
+        return message;
+      })
+    );
+
+    recallMessage(userID, doctorID, content, time, type, url);
+  };
 
   const handleScroll = (e: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
@@ -235,19 +287,27 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
   };
 
   const renderItem = ({ item, index }: { item: Message; index: number }) => {
-    const currentDate = formatDate(item.timestamp);
-    const previousDate =
-      index > 0
-        ? formatDate(messages[messages.length - 1 - (index - 1)].timestamp)
+    const messageIndex = messages.length - 1 - index;
+    const currentDate = formatDate(messages[messageIndex].timestamp);
+    const nextDate =
+      messageIndex > 0
+        ? formatDate(messages[messageIndex - 1].timestamp)
         : null;
 
-    const showDate = currentDate !== previousDate;
+    const showDate = currentDate !== nextDate;
 
     return (
       <MessageItem
         message={item}
         showDate={showDate} // Chỉ truyền true nếu ngày khác ngày trước đó
         onImagePress={() => handleImagePress(item.content)}
+        onLongPress={() => {
+          console.log("Nhấn giữ tin nhắn");
+          if (item.sender === "bs") return; // Không cho phép thu hồi tin nhắn của bác sĩ
+          setSelectedMessage(item); // Lưu tin nhắn được chọn
+          console.log("Tin nhắn được chọn: ", item);
+          setIsRecallModalVisible(true); // Hiển thị modal thu hồi tin nhắn
+        }} // Gọi hàm thu hồi tin nhắn khi nhấn giữ
       />
     );
   };
@@ -255,7 +315,10 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
   // Hàm format ngày cho so sánh
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
 
   // Xử lý nhấn vào hình ảnh
@@ -372,6 +435,49 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
             </View>
           )}
         </View>
+      </Modal>
+
+      {/* Modal thao tác với tin nhắn */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isRecallModalVisible}
+        onRequestClose={() => setIsRecallModalVisible(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/30 justify-end"
+          onPress={() => setIsRecallModalVisible(false)}
+        >
+          <View className="bg-white rounded-t-2xl px-5 pt-5 pb-10">
+            <TouchableOpacity
+              className="items-center p-4 rounded"
+              onPress={() => {
+                if (selectedMessage) {
+                  const url =
+                    selectedMessage.type === "image"
+                      ? selectedMessage.content
+                      : "";
+
+                  handleRecallMessage(
+                    selectedMessage.content,
+                    selectedMessage.timestamp,
+                    selectedMessage.type,
+                    url
+                  );
+                }
+
+                setIsRecallModalVisible(false);
+                setSelectedMessage(null);
+                setIsRecallModalVisible(false);
+              }}
+            >
+              <MaterialIcons name="delete" size={32} color="#dc2626" />
+              <Text className="text-base text-red-600 mt-2">
+                Thu hồi tin nhắn
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
       </Modal>
     </View>
   );

@@ -23,6 +23,7 @@ import { createRating } from "../../api/Rating";
 import SearchAndSortBar from "../../components/ui/SearchAndSortBar";
 import Fuse from "fuse.js";
 import { set } from "date-fns";
+import Toast from "react-native-toast-message";
 
 export default function CompletedAppointments({ navigation }: any) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -199,6 +200,23 @@ export default function CompletedAppointments({ navigation }: any) {
       await createRating(payload);
 
       // Reset UI state
+      setAppointments((prevAppointments) =>
+        prevAppointments.map((appointment) => {
+          if (appointment.id === selectedAppointment?.id) {
+            return {
+              ...appointment,
+              ratingContent: comment,
+              rating: rating,
+            };
+          }
+          return appointment;
+        })
+      );
+      Toast.show({
+        type: "success",
+        text1: "Đánh giá thành công",
+        text2: "Cảm ơn bạn đã đánh giá bác sĩ!",
+      });
       setModalVisible(false);
       setRating(0);
       setComment("");
@@ -292,7 +310,9 @@ export default function CompletedAppointments({ navigation }: any) {
                       : "text-gray-500"
                   }`}
                 >
-                  Đánh giá
+                  {item.ratingContent === undefined
+                    ? "Đánh giá"
+                    : "Đã đánh giá"}
                 </Text>
               </TouchableOpacity>
             </TouchableOpacity>

@@ -78,7 +78,6 @@ export const fetchPatientDetail = async (): Promise<Patient | null> => {
     );
 
     if (!response.ok) {
-      console.error("Lỗi khi gọi API:", response.statusText);
       return null;
     }
 
@@ -116,7 +115,7 @@ export const fetchPatientDetail = async (): Promise<Patient | null> => {
 
     return patient;
   } catch (error) {
-    console.error("Lỗi khi fetch chi tiết bệnh nhân:", error);
+    // console.error("Lỗi khi fetch chi tiết bệnh nhân:", error);
     return null;
   }
 };
@@ -143,7 +142,7 @@ export const fetchInsuranceInfo = async (
       expiredDate: data.ngay_het_han,
     };
   } catch (error) {
-    console.error("Error fetching insurance info:", error);
+    // console.error("Error fetching insurance info:", error);
     throw error;
   }
 };
@@ -179,13 +178,13 @@ export const updatePatientDetail = async (
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("Update failed:", errorData);
+      // console.error("Update failed:", errorData);
       throw new Error(errorData?.message || "Cập nhật thất bại");
     }
 
     return await response.json();
   } catch (error: any) {
-    console.error("Update patient detail error:", error.message);
+    // console.error("Update patient detail error:", error.message);
     throw error;
   }
 };
@@ -215,14 +214,67 @@ export const updateInsuranceInfo = async (
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("Lỗi từ server:", errorData);
+      // console.error("Lỗi từ server:", errorData);
       throw new Error("Cập nhật thông tin bảo hiểm thất bại.");
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error("Lỗi khi gọi API:", error);
+    // console.error("Lỗi khi gọi API:", error);
+    throw error;
+  }
+};
+
+export const getShareAllStatus = async (patientID: string) => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/diagnosis/share_all/patient/${patientID}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`Lỗi khi lấy dữ liệu chia sẻ: ${error.message}`);
+    }
+
+    const data = await response.json();
+    return data.chia_se_kq_cho_tat_ca; // chỉ trả về true / false
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateShareAllStatus = async (
+  patientID: string,
+  newState: boolean
+) => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/diagnosis/share_all/patient/${patientID}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ newState }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`Lỗi cập nhật chia sẻ: ${error.message}`);
+    }
+
+    const data = await response.json();
+    return data; // tùy vào backend trả về gì, có thể trả về object hoặc chỉ status
+  } catch (error) {
+    // console.error("Lỗi cập nhật trạng thái chia sẻ:", error);
     throw error;
   }
 };

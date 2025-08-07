@@ -8,6 +8,43 @@ interface HealthMetricsLineChartProps {
   healthMetricsLineData: { date: string; value: number }[];
 }
 
+const mapWeekdayShort = (weekday: string) => {
+  switch (weekday) {
+    case "Monday":
+      return "Thứ 2";
+    case "Tuesday":
+      return "Thứ 3";
+    case "Wednesday":
+      return "Thứ 4";
+    case "Thursday":
+      return "Thứ 5";
+    case "Friday":
+      return "Thứ 6";
+    case "Saturday":
+      return "Thứ 7";
+    case "Sunday":
+      return "Chủ nhật";
+    default:
+      return weekday;
+  }
+};
+
+const formatLabel = (date: string) => {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    // Định dạng YYYY-MM-DD => DD/MM
+    const weekday = moment(date, "YYYY-MM-DD").locale("vi").format("dddd");
+    return mapWeekdayShort(weekday);
+  } else if (/^\d{4}-\d{2}$/.test(date)) {
+    // Định dạng YYYY-MM => MM
+    return moment(date, "YYYY-MM").format("MM/YYYY");
+  } else if (/^\d{4}$/.test(date)) {
+    // Định dạng YYYY => YYYY
+    return date;
+  } else {
+    return date; // fallback, giữ nguyên
+  }
+};
+
 const HealthMetricsLineChart: React.FC<HealthMetricsLineChartProps> = ({
   healthMetricsLineData,
 }) => {
@@ -22,7 +59,7 @@ const HealthMetricsLineChart: React.FC<HealthMetricsLineChartProps> = ({
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Sử dụng trực tiếp dữ liệu đã được xử lý bên ngoài
-  const labels = healthMetricsLineData.map(({ date }) => date);
+  const labels = healthMetricsLineData.map(({ date }) => formatLabel(date));
   const values = healthMetricsLineData.map(({ value }) => value);
 
   const chartWidth = Math.max(

@@ -177,7 +177,14 @@ const ActivityScreen = ({ navigation }: any) => {
         distanceEndDate
       );
       if (stepsData) {
-        setStepsRecords(stepsData);
+        if (stepsDisplayOption === "Tháng") {
+          // Chuyển đổi định dạng ngày tháng cho biểu đồ
+          const formattedStepsData = stepsData.map((record) => ({
+            ...record,
+            date: formatDateTime(record.date, "month-year"),
+          }));
+          setStepsRecords(formattedStepsData);
+        } else setStepsRecords(stepsData);
       }
       if (distanceData) {
         setDistanceRecords(distanceData);

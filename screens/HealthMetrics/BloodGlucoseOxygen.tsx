@@ -297,17 +297,17 @@ const BloodGlucoseOxygenScreen = ({ navigation }: any) => {
       ) : (
         <View className="flex-row justify-between mb-4">
           <HealthMetricCard
-            label="Glucose máu"
+            label="Đường huyết"
             unit="mg/dL"
             value={latestBloodGlucoseRecord?.value}
-            imageSource={require("../../assets/healthMetrics/respiratoryRate.png")}
+            imageSource={require("../../assets/healthMetrics/bloodGlucose.jpg")}
             onPress={() => setIsChangeBloodGlucose(true)}
           />
           <HealthMetricCard
-            label="Oxy máu"
+            label="Độ bão hòa oxy"
             unit="%"
             value={latestOxygenSaturationRecord?.value}
-            imageSource={require("../../assets/healthMetrics/respiratoryRate.png")}
+            imageSource={require("../../assets/healthMetrics/bloodOxygen.jpg")}
             onPress={() => setIsChangeOxygenSaturation(true)}
           />
         </View>

@@ -304,6 +304,7 @@ export interface MedicineIntakeDetail {
     ten_thuoc: string;
     don_vi: string;
     url: string;
+    truoc_an: boolean;
   }[];
   Don_thuoc: {
     id: number;

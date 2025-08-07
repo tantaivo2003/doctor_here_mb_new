@@ -12,24 +12,28 @@ import { Ionicons } from "@expo/vector-icons";
 // Format để so sánh ngày
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
-  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
 };
-
 interface MessageItemProps {
   message: {
     sender: string;
     type: string;
     content: string | string[];
-    timestamp: string; // ISO date string
+    timestamp: string;
   };
   showDate: boolean;
-  onImagePress: (imageUri: string) => void; // Hàm để xử lý khi nhấn vào hình ảnh
+  onImagePress: (imageUri: string) => void;
+  onLongPress: () => void;
 }
 
 export const MessageItem: FC<MessageItemProps> = ({
   message,
   showDate,
   onImagePress,
+  onLongPress,
 }) => {
   const messageDate = formatDate(message.timestamp); // Lấy ngày của tin nhắn hiện tại
 
@@ -51,7 +55,9 @@ export const MessageItem: FC<MessageItemProps> = ({
         } px-3 my-2`}
       >
         {message.type === "text" && (
-          <View
+          <TouchableOpacity
+            onLongPress={onLongPress}
+            delayLongPress={200}
             className={`p-3 rounded-lg ${
               message.sender === "bn" ? "bg-green-300" : "bg-white"
             } max-w-[70%]`}
@@ -63,12 +69,14 @@ export const MessageItem: FC<MessageItemProps> = ({
                 minute: "2-digit",
               })}
             </Text>
-          </View>
+          </TouchableOpacity>
         )}
 
         {message.type === "image" && (
           <TouchableOpacity
             onPress={() => onImagePress(message.content as string)}
+            onLongPress={onLongPress}
+            delayLongPress={200}
           >
             <View className="flex-col">
               <Image
@@ -102,6 +110,13 @@ export const MessageItem: FC<MessageItemProps> = ({
               })}
             </Text>
           </TouchableOpacity>
+        )}
+
+        {message.type === "recall" && (
+          <View className="flex-row items-center">
+            <Ionicons name="trash" size={24} color="gray" />
+            <Text className="ml-2 text-gray-500">Tin nhắn đã bị thu hồi</Text>
+          </View>
         )}
       </View>
     </View>

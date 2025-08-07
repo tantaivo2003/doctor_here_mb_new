@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, Dimensions, ScrollView } from "react-native";
 import { LineChart } from "react-native-chart-kit";
+import moment from "moment";
 
 interface BloodPressureData {
   date: string;
@@ -11,6 +12,43 @@ interface BloodPressureData {
 interface HealthMetricsDoubleLineChartProps {
   bloodPressureData: BloodPressureData[];
 }
+
+const mapWeekdayShort = (weekday: string) => {
+  switch (weekday) {
+    case "Monday":
+      return "Thứ 2";
+    case "Tuesday":
+      return "Thứ 3";
+    case "Wednesday":
+      return "Thứ 4";
+    case "Thursday":
+      return "Thứ 5";
+    case "Friday":
+      return "Thứ 6";
+    case "Saturday":
+      return "Thứ 7";
+    case "Sunday":
+      return "Chủ nhật";
+    default:
+      return weekday;
+  }
+};
+
+const formatLabel = (date: string) => {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    // Định dạng YYYY-MM-DD => DD/MM
+    const weekday = moment(date, "YYYY-MM-DD").locale("vi").format("dddd");
+    return mapWeekdayShort(weekday);
+  } else if (/^\d{4}-\d{2}$/.test(date)) {
+    // Định dạng YYYY-MM => MM
+    return moment(date, "YYYY-MM").format("MM");
+  } else if (/^\d{4}$/.test(date)) {
+    // Định dạng YYYY => YYYY
+    return date;
+  } else {
+    return date; // fallback, giữ nguyên
+  }
+};
 
 const HealthMetricsDoubleLineChart: React.FC<
   HealthMetricsDoubleLineChartProps
@@ -25,7 +63,7 @@ const HealthMetricsDoubleLineChart: React.FC<
 
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const labels = bloodPressureData.map((item) => item.date);
+  const labels = bloodPressureData.map((item) => formatLabel(item.date));
   const systolicValues = bloodPressureData.map((item) => item.systolic);
   const diastolicValues = bloodPressureData.map((item) => item.diastolic);
 
