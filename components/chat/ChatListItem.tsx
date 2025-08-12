@@ -4,10 +4,15 @@ import { Chat } from "../../types/types"; // Import kiểu Chat
 
 interface ChatListItemProps {
   doctor: Chat; // Thay thế kiểu object bằng Chat
+  is_ai_agent?: boolean;
   onPress: () => void;
 }
 
-export const ChatListItem: FC<ChatListItemProps> = ({ doctor, onPress }) => {
+export const ChatListItem: FC<ChatListItemProps> = ({
+  doctor,
+  is_ai_agent,
+  onPress,
+}) => {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -19,11 +24,14 @@ export const ChatListItem: FC<ChatListItemProps> = ({ doctor, onPress }) => {
         <Image
           className="w-16 h-16 rounded-full"
           source={
-            doctor.avatar
+            is_ai_agent
+              ? require("../../assets/doctor_picture/AIAgent.png")
+              : doctor.avatar
               ? { uri: doctor.avatar }
               : require("../../assets/avatar-placeholder.png")
           }
         />
+
         {/* Chấm xanh trạng thái online */}
         {/* {doctor.isOnline && (
           <View className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />

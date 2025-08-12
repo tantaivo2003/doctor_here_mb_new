@@ -212,6 +212,15 @@ export interface Message {
   content: string;
   timestamp: string;
 }
+
+export const aiMessages: Message = {
+  id: -99,
+  sender: "doctor",
+  type: "text",
+  content: "Xin chào, tôi là trợ lý ảo. Tôi có thể giúp gì cho bạn?",
+  timestamp: "07:21",
+};
+
 export const messagesList: Message[] = [
   {
     id: 1,
@@ -304,7 +313,6 @@ export interface MedicineIntakeDetail {
     ten_thuoc: string;
     don_vi: string;
     url: string;
-    truoc_an: boolean;
   }[];
   Don_thuoc: {
     id: number;

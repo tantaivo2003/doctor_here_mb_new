@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { FC, useEffect, useState, useRef, useLayoutEffect } from "react";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
-import { messagesList, Message } from "../../types/types";
+import { messagesList, Message, aiMessages } from "../../types/types";
 import { MessageItem } from "../../components/chat/MessageItem";
 import socket, {
   sendMessage,
@@ -26,6 +26,8 @@ import {
   markMessagesAsSeen,
   createConversation,
 } from "../../api/Message";
+import { getUserID } from "../../services/storage";
+import { saveMessageToDB, sendMsgToAI } from "../../api/AIAgent";
 import Toast from "react-native-toast-message";
 import { MaterialIcons } from "@expo/vector-icons"; // nếu bạn dùng Expo
 const ChatDetailScreen: FC = ({ route, navigation }: any) => {
@@ -37,7 +39,8 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isRecallModalVisible, setIsRecallModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const { convID, doctorAvtUrl, doctorID, doctorName, userID } = route.params;
+  const { convID, doctorAvtUrl, doctorID, doctorName, userID, is_ai_agent } =
+    route.params;
   const [conversationID, setConversationID] = useState<string | null>(
     convID || null
   );
@@ -189,9 +192,88 @@ const ChatDetailScreen: FC = ({ route, navigation }: any) => {
     }
   };
 
+  const llmHandle = async (ma_user: string, message: string) => {
+    try {
+      const response = await sendMsgToAI(ma_user, message, "user");
+      if (!response) {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: "Không thể gửi tin nhắn đến AI.",
+        });
+        return;
+      }
+      const saveResponse = await saveMessageToDB({
+        cuoc_hoi_thoai: conversationID.toString(),
+        ben_gui_di: "ai",
+        kieu_noi_dung: "text",
+        noi_dung_van_ban: response.reply,
+        media_url: "",
+        thoi_diem_gui: new Date().toISOString(),
+      });
+
+      if (saveResponse) {
+        console.log("Message saved successfully:", saveResponse);
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: Date.now(),
+            sender: "ai",
+            type: "text",
+            content: response.reply,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error in llmHandle:", error);
+      return null;
+    }
+  };
   // Hàm gửi tin nhắn
   const handleSendMessage = async () => {
     if (inputText.trim() === "" && files.length === 0) return; // Nếu không có nội dung hoặc file, không gửi
+    if (is_ai_agent) {
+      try {
+        const response = await saveMessageToDB({
+          cuoc_hoi_thoai: conversationID.toString(),
+          ben_gui_di: "bn", // Người bệnh
+          kieu_noi_dung: "text",
+          noi_dung_van_ban: inputText,
+          media_url: "",
+          thoi_diem_gui: new Date().toISOString(),
+        });
+
+        if (response) {
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            {
+              id: Date.now(),
+              sender: "bn", // Người bệnh
+              type: files.length > 0 ? "media" : "text",
+              content: files.length > 0 ? files[0].uri : inputText,
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+          setInputText(""); // Reset input text
+          setFiles([]); // Reset files
+          llmHandle(userID, inputText);
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Lỗi",
+            text2: "Không thể gửi tin nhắn.",
+          });
+        }
+      } catch (err) {
+        Toast.show({
+          type: "error",
+          text1: "Lỗi",
+          text2: "Không thể gửi tin nhắn.",
+        });
+      }
+      return;
+    }
     // Nếu chưa có convID thì tạo mới
     let currentConvID = conversationID;
     if (!currentConvID) {

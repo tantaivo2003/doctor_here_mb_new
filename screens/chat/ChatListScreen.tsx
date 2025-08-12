@@ -15,6 +15,7 @@ import { useFocusEffect } from "@react-navigation/native";
 interface Conversation {
   cuoc_hoi_thoai: number;
   thoi_diem_tin_nhan_cuoi: string;
+  is_ai_agent?: boolean;
   nguoi_dung: {
     ma: string;
     avt_url: string | null;
@@ -92,7 +93,7 @@ const ChatListScreen: FC = ({ navigation }: any) => {
     doctorAvtUrl: string,
     doctorID: string,
     doctorName: string,
-    userID: string
+    is_ai_agent: boolean = false
   ) => {
     console.log("Đi tới chat với ID: ", convID);
     navigation.navigate("ChatDetailScreen", {
@@ -100,9 +101,21 @@ const ChatListScreen: FC = ({ navigation }: any) => {
       doctorAvtUrl,
       doctorID,
       doctorName,
-      userID,
+      is_ai_agent,
     });
   };
+
+  // useEffect(() => {
+  //   console.log("UserID: ", getUserID());
+  //   fetch(`${API_BASE_URL}/api/conversation/user/${userID}`)
+  //     .then((res) => res.json())
+  //     .then((data) => {
+  //       console.log("Lấy danh sách trò chuyện", data);
+  //       setConversations(data);
+  //     });
+
+  //   return () => {};
+  // }, [userID]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -189,7 +202,8 @@ const ChatListScreen: FC = ({ navigation }: any) => {
                 item.tin_nhan.media_url && item.tin_nhan.media_url !== ""
                   ? "Đã gửi tệp"
                   : item.tin_nhan.noi_dung_van_ban,
-              avatar: item.nguoi_dung.avt_url,
+              avatar: item.nguoi_dung.avt_url || "",
+
               unreadCount: item.so_tin_moi,
               time: new Date(item.thoi_diem_tin_nhan_cuoi).toLocaleTimeString(
                 "vi-VN",
@@ -200,20 +214,16 @@ const ChatListScreen: FC = ({ navigation }: any) => {
               ),
               isOnline: false,
             }}
-            onPress={async () => {
-              const userID = await getUserID();
-              if (!userID) {
-                console.log("Chưa có userID");
-                return;
-              }
+            is_ai_agent={item.is_ai_agent || false}
+            onPress={() =>
               handlePressMessage(
                 item.cuoc_hoi_thoai,
                 item.nguoi_dung.avt_url || "",
                 item.nguoi_dung.ma,
                 item.nguoi_dung.ho_va_ten,
-                userID
-              );
-            }}
+                item.is_ai_agent
+              )
+            }
           />
         )}
         ListEmptyComponent={
